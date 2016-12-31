@@ -1,9 +1,14 @@
 [package]
 name = "telebot"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["bytesnake <bytesnake@mailbox.org>"]
 license = "MIT"
 description = "A wrapper around the telegram bot api, powered by futures"
+
+repository = "https://github.com/bytesnake/telebot"
+readme = "README.md"
+
+keywords = ["telebot", "telegram", "bot", "chat"]
 
 [dependencies]
 serde = "0.8.20"
