@@ -6,6 +6,7 @@ use telebot::bot;
 use tokio_core::reactor::Core;
 use futures::stream::Stream;
 use futures::Future;
+use std::env;
 
 // import all available functions
 use telebot::functions::*;
@@ -15,29 +16,16 @@ fn main() {
     let mut lp = Core::new().unwrap();
 
     // Create the bot
-    let bot = bot::RcBot::new(lp.handle(), "<api key>")
+    let bot = bot::RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap())
         .update_interval(200);
 
-    // Register a reply command which answer a message
-    let handle = bot.new_cmd("/reply")
-        .and_then(|(bot, msg)| {
-            let mut text = msg.text.unwrap().clone();
-            if text.is_empty() {
-                text = "<empty>".into();
-            }
-
-            bot.send_message(msg.chat.id, text).send()
-        });
-
-    bot.register(handle);
- 
     // Register a location command which will send a location to request like /location 2.321 12.32
     enum LocationErr {
         Telegram(telebot::error::Error),
         WrongLocationFormat
     }
 
-    let handle2 = bot.new_cmd("/location")
+    let handle = bot.new_cmd("/location")
         .then(|result| {
             let (bot, msg) = result.expect("Strange telegram error!");
 
@@ -68,12 +56,7 @@ fn main() {
             bot.send_message(msg.chat.id, text).send()
         });
 
-    bot.register(handle2);
-
-    let handle3 = bot.new_cmd("/typing")
-        .and_then(|(bot, msg)| bot.chat_action(msg.chat.id, "typing".into()).send());
-
-    bot.register(handle3);
+    bot.register(handle);
 
     // Register a get_my_photo command which will send the own profile photo to the chat
     enum PhotoErr {
@@ -81,7 +64,7 @@ fn main() {
         NoPhoto
     }
 
-    let handle4 = bot.new_cmd("/get_my_photo")
+    let handle2 = bot.new_cmd("/get_my_photo")
         .then(|result| {
             let (bot, msg) = result.expect("Strange telegram error!");
     
@@ -113,7 +96,7 @@ fn main() {
             bot.send_message(msg.chat.id, text).send()
         });
         
-    bot.register(handle4);
+    bot.register(handle2);
 
     // enter the main loop
     bot.run(&mut lp).unwrap();

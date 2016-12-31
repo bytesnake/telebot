@@ -49,7 +49,7 @@ impl Bot {
 
     /// Creates a new request and add a JSON message to it
     pub fn fetch_json<'a>(&self, func: &str, msg: &str) -> impl Future<Item=String, Error=Error> + 'a{
-        println!("Send JSON: {}", msg);
+        //debug!("Send JSON: {}", msg);
         
         let mut header = List::new();
         header.append("Content-Type: application/json").unwrap();
@@ -65,15 +65,15 @@ impl Bot {
 
     /// Creates a new request and add a file and some more form data to it
     pub fn fetch_formdata<'a, T>(&self, func: &str, msg: Value, mut file: T, kind: &str, file_name: &str) -> impl Future<Item=String, Error=Error> + 'a where T: io::Read {
-        println!("Send FormData {}",msg);
+        //debug!("Send FormData {}",msg);
         let mut content = Vec::new();
 
         let mut a = Easy::new();
         let mut form = Form::new();
         
-        let size = file.read_to_end(&mut content).unwrap();
+        let _ = file.read_to_end(&mut content).unwrap();
 
-        println!("Content size: {}", size);
+        //println!("Content size: {}", size);
 
         for (key, val) in msg.as_object().unwrap().iter() {
             //println!("{:?}: {:?}", key,val);
@@ -130,7 +130,6 @@ impl Bot {
             let response = result.lock().unwrap();
             String::from(str::from_utf8(&response).unwrap())
         }).and_then(|x| {
-            //println!("Got {}", x);
             // try to parse the result as a JSON and find the OK field.
             // If the ok field is true, then the string in "result" will be returned
             if let Ok(req) = serde_json::from_str::<Value>(&x) {
@@ -192,8 +191,8 @@ impl RcBot {
             .map(|(_, x)| stream::iter(x.0.into_iter().map(|x| Ok(x)).collect::<Vec<Result<objects::Update, Error>>>()))
             .flatten()
             .and_then(move |x| {
-                if self.inner.last_id.get() < x.update_id+1 {
-                    self.inner.last_id.set(x.update_id+1);
+                if self.inner.last_id.get() < x.update_id as u32 +1 {
+                    self.inner.last_id.set(x.update_id as u32 +1);
                 }
         
                 Ok(x) 

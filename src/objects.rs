@@ -6,14 +6,14 @@
 /// These objects are redefinitions of basic types. telebot-derive will scope every object in
 /// answer, so we need to redefine them here.
 pub type Boolean = bool;
-pub type Integer = u32;
+pub type Integer = i64;
 pub type Vector<T> = Vec<T>;
 pub type NotImplemented = ();
 
 /// This object represents a Telegram user or bot.
 #[derive(Deserialize, Debug, Clone)]
 pub struct User {
-    pub id: u32,
+    pub id: Integer,
     pub first_name: String,
     pub last_name: Option<String>,
     pub username: Option<String>
@@ -22,7 +22,7 @@ pub struct User {
 /// This object represents a chat.
 #[derive(Deserialize, Debug)]
 pub struct Chat {
-    pub id: u32,
+    pub id: Integer,
     #[serde(rename="type")]
     kind: String,
     title: Option<String>,
@@ -38,8 +38,8 @@ pub struct Chat {
 pub struct MessageEntity {
     #[serde(rename="type")]
     kind: String,
-    offset: u32,
-    length: u32,
+    offset: Integer,
+    length: Integer,
     url: Option<String>,
     user: Option<User>
 }
@@ -47,16 +47,16 @@ pub struct MessageEntity {
 /// This object represents a message.
 #[derive(Deserialize, Debug)]
 pub struct Message {
-    message_id: u32,
+    message_id: Integer,
     pub from: Option<User>,
-    date: u32,
+    date: Integer,
     pub chat: Chat,
     forward_from: Option<User>,
     forward_from_chat: Option<User>,
-    forward_from_message_id: Option<u32>,
-    forward_date: Option<u32>,
+    forward_from_message_id: Option<Integer>,
+    forward_date: Option<Integer>,
     reply_to_message: Option<Box<Message>>,
-    edit_date: Option<u32>,
+    edit_date: Option<Integer>,
     pub text: Option<String>,
     entities: Option<Vec<MessageEntity>>,
     audio: Option<Audio>,
@@ -78,13 +78,13 @@ pub struct Message {
     group_chat_created: Option<bool>,
     supergroup_chat_created: Option<bool>,
     channel_chat_created: Option<bool>,
-    migrate_to_chat_id: Option<u32>,
-    migrate_from_chat_id: Option<u32>,
+    migrate_to_chat_id: Option<Integer>,
+    migrate_from_chat_id: Option<Integer>,
     pinned_message: Option<Box<Message>>
 }
 
 impl Message {
-    pub fn get_chat_id(&self) -> u32 {
+    pub fn get_chat_id(&self) -> Integer {
         self.chat.id
     }
 }
@@ -94,7 +94,7 @@ pub struct Updates(pub Vec<Update>);
 
 #[derive(Deserialize, Debug)]
 pub struct Update {
-    pub update_id: u32,
+    pub update_id: Integer,
     pub message: Option<Message>,
     edited_message: Option<Message>,
     channel_post: Option<Message>,
@@ -108,20 +108,20 @@ pub struct Update {
 #[derive(Deserialize, Debug, Clone)]
 pub struct PhotoSize {
     pub file_id: String,
-    width: u32,
-    height: u32,
-    file_size: Option<u32>
+    width: Integer,
+    height: Integer,
+    file_size: Option<Integer>
 }
 
 /// This object represents an audio file to be treated as music by the Telegram clients.
 #[derive(Deserialize, Debug)]
 pub struct Audio {
     file_id: String,
-    duration: u32,
+    duration: Integer,
     performer: Option<String>,
     title: Option<String>,
     mime_type: Option<String>,
-    file_size: Option<u32>
+    file_size: Option<Integer>
 }
 
 /// This object represents a general file (as opposed to photos, voice messages and audio files).
@@ -131,27 +131,27 @@ pub struct Document {
     thumb: Option<PhotoSize>,
     file_name: Option<String>,
     mime_type: Option<String>,
-    file_size: Option<u32>
+    file_size: Option<Integer>
 }
 
 /// This object represents a sticker.
 #[derive(Deserialize, Debug)]
 pub struct Sticker {
     file_id: String,
-    width: u32,
-    height: u32,
+    width: Integer,
+    height: Integer,
     thumb: Option<PhotoSize>,
     emoji: Option<String>,
-    file_size: Option<u32>
+    file_size: Option<Integer>
 }
 
 /// This object represents a video file.
 #[derive(Deserialize, Debug)]
 pub struct Video {
     file_id: String,
-    width: u32,
-    height: u32,
-    duration: u32,
+    width: Integer,
+    height: Integer,
+    duration: Integer,
     thumb: Option<PhotoSize>,
     mime_type: Option<String>,
     file_size: Option<String>
@@ -161,7 +161,7 @@ pub struct Video {
 #[derive(Deserialize, Debug)]
 pub struct Voice {
     file_id: String,
-    duration: u32,
+    duration: Integer,
     mime_type: Option<String>,
     file_size: Option<String>
 }
@@ -172,7 +172,7 @@ pub struct Contact {
     phone_number: String,
     first_name: String,
     last_name: String,
-    user_id: u32
+    user_id: Integer
 }
 
 /// This object represents a point on the map.
@@ -194,7 +194,7 @@ pub struct Venue {
 /// This object represent a user's profile pictures.
 #[derive(Deserialize, Debug)]
 pub struct UserProfilePhotos {
-    pub total_count: u32,
+    pub total_count: Integer,
     pub photos: Vec<Vec<PhotoSize>>
 }
 
@@ -205,7 +205,7 @@ pub struct UserProfilePhotos {
 #[derive(Deserialize, Debug)]
 pub struct File {
     file_id: String,
-    file_size: Option<u32>,
+    file_size: Option<Integer>,
     file_path: Option<String>
 }
 
@@ -293,8 +293,8 @@ pub struct ChatMember {
 /// Contains information about why a request was unsuccessfull.
 #[derive(Deserialize, Debug)]
 pub struct ResponseParameter {
-    migrate_to_chat_id: Option<u32>,
-    retry_after: Option<u32>
+    migrate_to_chat_id: Option<Integer>,
+    retry_after: Option<Integer>
 }
 
 /// A placeholder, currently holds no information. Use BotFather to set up your game.

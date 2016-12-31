@@ -5,7 +5,7 @@
 use bot::{Bot, RcBot};
 use serde_json;
 use objects;
-use objects::NotImplemented;
+use objects::{Integer, NotImplemented};
 use error::Error;
 use futures::Future;
 use std::io;
@@ -25,7 +25,7 @@ pub struct GetMe;
 #[answer = "Message"]
 #[bot_function = "send_message"]
 pub struct Message {
-    chat_id: u32,
+    chat_id: Integer,
     text: String,
 #[serde(skip_serializing_if="Option::is_none")]
     parse_mode: Option<String>,
@@ -34,7 +34,7 @@ pub struct Message {
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notificaton: Option<bool>,
 #[serde(skip_serializing_if="Option::is_none")]
-    reply_to_message_id: Option<u32>,
+    reply_to_message_id: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     reply_markup: Option<NotImplemented>
 }
@@ -46,11 +46,11 @@ pub struct Message {
 #[bot_function = "get_updates"]
 pub struct GetUpdates {
 #[serde(skip_serializing_if="Option::is_none")]
-    offset: Option<u32>,
+    offset: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
-    limit: Option<u32>,
+    limit: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
-    timeout: Option<u32>,
+    timeout: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     allowed_updates: Option<Vec<String>>
 }
@@ -61,7 +61,7 @@ pub struct GetUpdates {
 #[answer = "Message"]
 #[bot_function = "photo"]
 pub struct SendPhoto {
-    chat_id: u32,
+    chat_id: Integer,
     photo: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     caption: Option<String>,
@@ -83,12 +83,12 @@ pub struct SendPhoto {
 #[answer = "Message"]
 #[bot_function = "audio"]
 pub struct SendAudio {
-    chat_id: u32,
+    chat_id: Integer,
     audio: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     caption: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
-    duration: Option<u32>,
+    duration: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     performer: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
@@ -96,7 +96,7 @@ pub struct SendAudio {
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
 #[serde(skip_serializing_if="Option::is_none")]
-    reply_to_message_id: Option<u32>,
+    reply_to_message_id: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     reply_markup: Option<NotImplemented>
 }
@@ -109,14 +109,14 @@ pub struct SendAudio {
 #[answer = "Message"]
 #[bot_function = "document"]
 pub struct SendDocument {
-    chat_id: u32,
+    chat_id: Integer,
     document: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     caption: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
 #[serde(skip_serializing_if="Option::is_none")]
-    reply_to_message_id: Option<u32>,
+    reply_to_message_id: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     reply_markup: Option<NotImplemented>
 }
@@ -127,12 +127,12 @@ pub struct SendDocument {
 #[answer = "Message"]
 #[bot_function = "sticker"]
 pub struct SendSticker {
-    chat_id: u32,
+    chat_id: Integer,
     sticker: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
 #[serde(skip_serializing_if="Option::is_none")]
-    reply_to_message_id: Option<u32>,
+    reply_to_message_id: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     reply_markup: Option<NotImplemented>
 }
@@ -145,20 +145,20 @@ pub struct SendSticker {
 #[answer = "Message"]
 #[bot_function = "video"]
 pub struct SendVideo {
-    chat_id: u32,
+    chat_id: Integer,
     video: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
-    duration: Option<u32>,
+    duration: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
-    width: Option<u32>,
+    width: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
-    height: Option<u32>,
+    height: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     caption: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
 #[serde(skip_serializing_if="Option::is_none")]
-    reply_to_message_id: Option<u32>,
+    reply_to_message_id: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     reply_markup: Option<NotImplemented>
 }
@@ -173,16 +173,16 @@ pub struct SendVideo {
 #[answer = "Message"]
 #[bot_function = "voice"]
 pub struct SendVoice {
-    chat_id: u32,
+    chat_id: Integer,
     voice: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     caption: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
-    duration: Option<u32>,
+    duration: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
 #[serde(skip_serializing_if="Option::is_none")]
-    reply_to_message_id: Option<u32>,
+    reply_to_message_id: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     reply_markup: Option<NotImplemented>
 }
@@ -193,13 +193,13 @@ pub struct SendVoice {
 #[answer = "Message"]
 #[bot_function = "location"]
 pub struct SendLocation {
-    chat_id: u32,
+    chat_id: Integer,
     latitude: f32,
     longitude: f32,
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
 #[serde(skip_serializing_if="Option::is_none")]
-    reply_to_message_id: Option<u32>,
+    reply_to_message_id: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     reply_markup: Option<NotImplemented>
 }
@@ -210,7 +210,7 @@ pub struct SendLocation {
 #[answer = "Message"]
 #[bot_function = "venue"]
 pub struct SendVenue {
-    chat_id: u32,
+    chat_id: Integer,
     latitude: f32,
     longitude: f32,
     title: String,
@@ -219,7 +219,7 @@ pub struct SendVenue {
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
 #[serde(skip_serializing_if="Option::is_none")]
-    reply_to_message_id: Option<u32>,
+    reply_to_message_id: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     reply_markup: Option<NotImplemented>
 }
@@ -230,14 +230,14 @@ pub struct SendVenue {
 #[answer = "Message"]
 #[bot_function = "contact"]
 pub struct SendContact {
-    chat_id: u32,
+    chat_id: Integer,
     phone_number: String,
     first_name: String,
     last_name: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
 #[serde(skip_serializing_if="Option::is_none")]
-    reply_to_message_id: Option<u32>,
+    reply_to_message_id: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
     reply_markup: Option<NotImplemented>
 }
@@ -250,7 +250,7 @@ pub struct SendContact {
 #[answer = "Boolean"]
 #[bot_function = "chat_action"]
 pub struct SendAction {
-    chat_id: u32,
+    chat_id: Integer,
     action: String
 }
 
@@ -261,11 +261,11 @@ pub struct SendAction {
 #[answer = "UserProfilePhotos"]
 #[bot_function = "get_user_profile_photos"]
 pub struct GetUserProfilePhotos {
-    user_id: u32,
+    user_id: Integer,
 #[serde(skip_serializing_if="Option::is_none")]
-    offset: Option<u32>,
+    offset: Option<Integer>,
 #[serde(skip_serializing_if="Option::is_none")]
-    limit: Option<u32>
+    limit: Option<Integer>
 }
 
 /// Use this method to get basic info about a file and prepare it for downloading. For the moment,
@@ -290,8 +290,8 @@ pub struct GetFile {
 #[answer = "Boolean"]
 #[bot_function = "kick_chat_member"]
 pub struct KickChatMember {
-    chat_id: u32,
-    user_id: u32
+    chat_id: Integer,
+    user_id: Integer
 }
 
 /// Use this method for your bot to leave a group, supergroup or channel. Returns True on
@@ -301,7 +301,7 @@ pub struct KickChatMember {
 #[answer = "Boolean"]
 #[bot_function = "leave_chat"]
 pub struct LeaveChat {
-    chat_id: u32,
+    chat_id: Integer,
 }
 
 /// Use this method to unban a previously kicked user in a supergroup. The user will not return to
@@ -312,8 +312,8 @@ pub struct LeaveChat {
 #[answer = "Boolean"]
 #[bot_function = "unban_chat_member"]
 pub struct UnbanChatMember {
-    chat_id: u32,
-    user_id: u32
+    chat_id: Integer,
+    user_id: Integer
 }
 
 /// Use this method to get up to date information about the chat (current name of the user for
@@ -324,7 +324,7 @@ pub struct UnbanChatMember {
 #[answer = "Chat"]
 #[bot_function = "get_chat"]
 pub struct GetChat {
-    chat_id: u32
+    chat_id: Integer
 }
 
 /// Use this method to get a list of administrators in a chat. On success, returns an Array of
@@ -336,7 +336,7 @@ pub struct GetChat {
 #[answer = "Vector<objects::ChatMember>"]
 #[bot_function = "unban_chat_administrators"]
 pub struct GetChatAdministrators {
-    chat_id: u32
+    chat_id: Integer
 }
 
 /// Use this method to get the number of members in a chat. Returns Int on success.
@@ -345,7 +345,7 @@ pub struct GetChatAdministrators {
 #[answer = "Integer"]
 #[bot_function = "get_chat_members_count"]
 pub struct GetChatMemberCounts {
-    chat_id: u32
+    chat_id: Integer
 }
 
 /// Use this method to get information about a member of a chat. Returns a ChatMember object on
@@ -355,8 +355,8 @@ pub struct GetChatMemberCounts {
 #[answer = "ChatMember"]
 #[bot_function = "get_chat_members_count"]
 pub struct GetChatMember {
-    chat_id: u32,
-    user_id: u32
+    chat_id: Integer,
+    user_id: Integer
 }
 
 /// Use this method to send answers to callback queries sent from inline keyboards. The answer will
@@ -371,5 +371,5 @@ pub struct AnwerCallbackQuery {
     text: Option<String>,
     show_alert: Option<bool>,
     url: Option<String>,
-    cache_time: Option<u32>
+    cache_time: Option<Integer>
 }
