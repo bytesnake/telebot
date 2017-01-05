@@ -1,9 +1,9 @@
 Telebot - Telegram Bot Library in Rust
 ======================================
 
-[![Crates.io](https://img.shields.io/crates/v/telebot.svg)](https://crates.io/crates/telebot)
+ [![License MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/bytesnake/telebot/blob/master/LICENSE) [![Crates.io](https://img.shields.io/crates/v/telebot.svg)](https://crates.io/crates/telebot) [![doc.rs](https://docs.rs/telebot/badge.svg)](https://docs.rs/telebot)
 
-This library allows you to write a Telegram Bot in Rust. It's an almost complete wrapper for the Telegram Bot API and uses tokio-curl to send a request to the Telegram server. Each Telegram function call returns a future.
+This library allows you to write a Telegram Bot in Rust. It's an almost complete wrapper for the Telegram Bot API and uses tokio-curl to send requests to the Telegram server. Each Telegram function call returns a future which carries the actual bot and the answer.
 
 ## Usage
 Add this to your `Cargo.toml`
@@ -71,3 +71,6 @@ pub struct SendLocation {
 
 The field "function" defines the name of the function in the local API. Each optional field in the struct can be changed by calling the function with the name of the field.
 So for example to send the location of Paris to chat 432432 silently: ` bot.location(432432, 48.8566, 2.3522).disable_notification(true).send() `
+
+## Contributing
+
