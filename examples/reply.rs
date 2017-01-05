@@ -26,7 +26,7 @@ fn main() {
                 text = "<empty>".into();
             }
 
-            bot.message(msg.chat.id, text).send()
+            bot.message(msg.chat.id, text).parse_mode("Text").send()
         });
 
     bot.register(handle);

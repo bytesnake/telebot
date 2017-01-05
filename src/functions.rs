@@ -13,25 +13,53 @@ use std::io;
 use std::rc::Rc;
 use futures::IntoFuture;
 
-/*
-struct WrapperFuture<T,S> {
-    inner: T
+/// A strongly typed parse_mode field which indicates the type of text
+pub enum ParseMode {
+    Markdown,
+    HTML,
+    Text
 }
 
-impl<T,S> Future for WrapperFuture<T,S> {
-    type Item=S;
-    type Error=Error;
+impl Into<String> for ParseMode {
+    fn into(self) -> String {
+        let tmp = match self {
+            ParseMode::Markdown => "Markdown",
+            ParseMode::HTML => "HTML",
+            ParseMode::Text => "Text"
+        };
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        self.inner.poll()
+        tmp.into()
     }
 }
 
-impl<T,S> WrapperFuture<T,S> {
-    fn new(inner: T) -> WrapperFuture<T,S> where T: Future<Item=S,Error=Error> {
-        WrapperFuture { inner: inner }
+/// A strongly typed action field which indicates the type of action
+pub enum Action {
+    Typing,
+    UploadPhoto,
+    RecordVideo,
+    UploadVideo,
+    RecordAudio,
+    UploadAudio,
+    UploadDocument,
+    FindLocation
+}
+
+impl Into<String> for Action {
+    fn into(self) -> String {
+        let tmp = match self {
+            Action::Typing => "Typing",
+            Action::UploadPhoto => "UploadPhoto",
+            Action::RecordVideo => "RecordVideo",
+            Action::UploadVideo => "UploadVideo",
+            Action::RecordAudio => "RecordVideo",
+            Action::UploadAudio => "UploadAudio",
+            Action::UploadDocument => "UploadDocument",
+            Action::FindLocation => "FindLocation"
+        };
+
+        tmp.into()
     }
-}*/
+}
 
 /// A simple method for testing your bot's auth token. Requires no parameters. Returns basic
 /// information about the bot in form of a User object.
