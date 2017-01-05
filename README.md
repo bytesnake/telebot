@@ -71,6 +71,3 @@ pub struct SendLocation {
 
 The field "function" defines the name of the function in the local API. Each optional field in the struct can be changed by calling the function with the name of the field.
 So for example to send the location of Paris to chat 432432 silently: ` bot.location(432432, 48.8566, 2.3522).disable_notification(true).send() `
-
-## Contributing
-
