@@ -9,7 +9,7 @@ This library allows you to write a Telegram Bot in Rust. It's an almost complete
 Add this to your `Cargo.toml`
 ``` toml
 [dependencies]
-telebot = "0.0.3"
+telebot = "0.0.5"
 ```
 
 ## Find a Telegram function in the source code
@@ -17,9 +17,9 @@ All available functions are listed in src/functions.rs. For example consider sen
 ``` rust
 /// Use this method to send point on the map. On success, the sent Message is returned.
 #[derive(TelegramFunction, Serialize)]
-#[function = "sendLocation"]
+#[call = "sendLocation"]
 #[answer = "Message"]
-#[bot_function = "location"]
+#[function = "location"]
 pub struct SendLocation {
     chat_id: u32,
     latitude: f32,
@@ -33,7 +33,7 @@ pub struct SendLocation {
 }
 ```
 
-The field "bot_function" defines the name of the function in the local API. Each optional field in the struct can be changed by calling the function with the name of the field.
+The field "function" defines the name of the function in the local API. Each optional field in the struct can be changed by calling the function with the name of the field.
 So for example to send the location of Paris to chat 432432 silently: ` bot.location(432432, 48.8566, 2.3522).disable_notification(true).send() `
 
 ## Example
@@ -43,7 +43,7 @@ extern crate tokio_core;
 extern crate futures;
 
 use telebot::bot;
-use tokio_core::reactor::Core;                                                                                                                                          
+use tokio_core::reactor::Core;                       
 use futures::stream::Stream;
 use futures::Future;
 use std::fs::File;
@@ -63,16 +63,16 @@ fn main() {
                 text = "<empty>".into();
             }
 
-            bot.send_message(msg.chat.id, text).send()
+            bot.message(msg.chat.id, text).send()
         });
 
     bot.register(handle);
 
     let handle2 = bot.new_cmd("/send")
         .and_then(|(bot, msg)| {
-            let mut file = File::open("./test.png").unwrap();
+            let file = File::open("./test.png").unwrap();
 
-            bot.photo(msg.chat.id).send_with("test.png", file)
+            bot.photo(msg.chat.id).file(("test.png", file)).send()
         });
 
     bot.register(handle2);
