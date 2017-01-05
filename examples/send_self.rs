@@ -21,9 +21,7 @@ fn main() {
 
     let handle = bot.new_cmd("/send_self")
         .and_then(|(bot,msg)| {
-            let file = File::open("./examples/send_self.rs").unwrap();
-
-            bot.document(msg.chat.id).send_with("send_self.rs", file)
+            bot.document(msg.chat.id).file("examples/send_self.rs").send()
         });
 
     bot.register(handle);

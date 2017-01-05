@@ -5,7 +5,6 @@ extern crate futures;
 use telebot::bot;
 use tokio_core::reactor::Core;
 use futures::stream::Stream;
-use futures::Future;
 use std::env;
 
 // import all available functions
@@ -19,7 +18,7 @@ fn main() {
     let bot = bot::RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap())
         .update_interval(200);
 
-    // Register a reply command which answer a message
+    // Register a reply command which answers a message
     let handle = bot.new_cmd("/reply")
         .and_then(|(bot, msg)| {
             let mut text = msg.text.unwrap().clone();
@@ -27,11 +26,11 @@ fn main() {
                 text = "<empty>".into();
             }
 
-            bot.send_message(msg.chat.id, text).send()
+            bot.message(msg.chat.id, text).send()
         });
 
     bot.register(handle);
  
-    // enter the main loop
+    // Enter the main loop
     bot.run(&mut lp).unwrap();
 }

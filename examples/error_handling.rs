@@ -19,7 +19,7 @@ fn main() {
     let bot = bot::RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap())
         .update_interval(200);
 
-    // Register a location command which will send a location to request like /location 2.321 12.32
+    // Register a location command which will send a location to requests like /location 2.321 12.32
     enum LocationErr {
         Telegram(telebot::error::Error),
         WrongLocationFormat
@@ -27,15 +27,15 @@ fn main() {
 
     let handle = bot.new_cmd("/location")
         .then(|result| {
-            let (bot, msg) = result.expect("Strange telegram error!");
+            let (bot, mut msg) = result.expect("Strange telegram error!");
 
-            let (longitude, altitude) = {
-                let pos: Vec<Result<f32,_>> = msg.text.clone().unwrap().split_whitespace().take(2).map(|x| x.parse::<f32>()).collect();
-                (pos[0].clone(), pos[1].clone())
-            };
+            let mut pos = msg.text.take().unwrap()
+                .split_whitespace().take(2)
+                .map(|x| x.parse::<f32>())
+                .collect::<Vec<Result<f32,_>>>();
 
-            if let Ok(longitude) = longitude {
-                if let Ok(altitude) = altitude {
+            if let Some(Ok(longitude)) = pos.pop() {
+                if let Some(Ok(altitude)) = pos.pop() {
                     return Ok((bot, msg, longitude, altitude));
                 }
             }
@@ -53,7 +53,7 @@ fn main() {
                 }
             };
 
-            bot.send_message(msg.chat.id, text).send()
+            bot.message(msg.chat.id, text).send()
         });
 
     bot.register(handle);
@@ -85,7 +85,7 @@ fn main() {
                 })
         })
         .and_then(|(bot, msg, file_id)| {
-            bot.photo(msg.chat.id).photo(file_id).send().map_err(|err| (bot, msg, PhotoErr::Telegram(err)))
+            bot.photo(msg.chat.id).file_id(file_id).send().map_err(|err| (bot, msg, PhotoErr::Telegram(err)))
         })
         .or_else(|(bot, msg, err)| {
             let text = match err {
@@ -93,7 +93,7 @@ fn main() {
                 PhotoErr::NoPhoto => "No photo exists!".into()
             };
 
-            bot.send_message(msg.chat.id, text).send()
+            bot.message(msg.chat.id, text).send()
         });
         
     bot.register(handle2);

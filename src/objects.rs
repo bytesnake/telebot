@@ -24,12 +24,12 @@ pub struct User {
 pub struct Chat {
     pub id: Integer,
     #[serde(rename="type")]
-    kind: String,
-    title: Option<String>,
-    username: Option<String>,
-    first_name: Option<String>,
-    last_name: Option<String>,
-    all_members_are_administrators: Option<bool>
+    pub kind: String,
+    pub title: Option<String>,
+    pub username: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub all_members_are_administrators: Option<bool>
 }
 
 /// This object represents one special entity in a text message. For example, hashtags, usernames,
@@ -37,56 +37,50 @@ pub struct Chat {
 #[derive(Deserialize, Debug)]
 pub struct MessageEntity {
     #[serde(rename="type")]
-    kind: String,
-    offset: Integer,
-    length: Integer,
-    url: Option<String>,
-    user: Option<User>
+    pub kind: String,
+    pub offset: Integer,
+    pub length: Integer,
+    pub url: Option<String>,
+    pub user: Option<User>
 }
 
 /// This object represents a message.
 #[derive(Deserialize, Debug)]
 pub struct Message {
-    message_id: Integer,
+    pub message_id: Integer,
     pub from: Option<User>,
-    date: Integer,
+    pub date: Integer,
     pub chat: Chat,
-    forward_from: Option<User>,
-    forward_from_chat: Option<User>,
-    forward_from_message_id: Option<Integer>,
-    forward_date: Option<Integer>,
-    reply_to_message: Option<Box<Message>>,
-    edit_date: Option<Integer>,
+    pub forward_from: Option<User>,
+    pub forward_from_chat: Option<User>,
+    pub forward_from_message_id: Option<Integer>,
+    pub forward_date: Option<Integer>,
+    pub reply_to_message: Option<Box<Message>>,
+    pub edit_date: Option<Integer>,
     pub text: Option<String>,
-    entities: Option<Vec<MessageEntity>>,
-    audio: Option<Audio>,
-    document: Option<Document>,
-    game: Option<NotImplemented>,
+    pub entities: Option<Vec<MessageEntity>>,
+    pub audio: Option<Audio>,
+    pub document: Option<Document>,
+    pub game: Option<NotImplemented>,
     pub photo: Option<Vec<PhotoSize>>,
-    sticker: Option<Sticker>,
-    video: Option<Video>,
-    voice: Option<Voice>,
-    caption: Option<String>,
-    contact: Option<Contact>,
-    location: Option<Location>,
-    venue: Option<Venue>,
-    new_chat_member: Option<User>,
-    left_chat_member: Option<User>,
-    new_chat_title: Option<String>,
-    new_chat_photo: Option<Vec<PhotoSize>>,
-    delete_chat_photo: Option<bool>,
-    group_chat_created: Option<bool>,
-    supergroup_chat_created: Option<bool>,
-    channel_chat_created: Option<bool>,
-    migrate_to_chat_id: Option<Integer>,
-    migrate_from_chat_id: Option<Integer>,
-    pinned_message: Option<Box<Message>>
-}
-
-impl Message {
-    pub fn get_chat_id(&self) -> Integer {
-        self.chat.id
-    }
+    pub sticker: Option<Sticker>,
+    pub video: Option<Video>,
+    pub voice: Option<Voice>,
+    pub caption: Option<String>,
+    pub contact: Option<Contact>,
+    pub location: Option<Location>,
+    pub venue: Option<Venue>,
+    pub new_chat_member: Option<User>,
+    pub left_chat_member: Option<User>,
+    pub new_chat_title: Option<String>,
+    pub new_chat_photo: Option<Vec<PhotoSize>>,
+    pub delete_chat_photo: Option<bool>,
+    pub group_chat_created: Option<bool>,
+    pub supergroup_chat_created: Option<bool>,
+    pub channel_chat_created: Option<bool>,
+    pub migrate_to_chat_id: Option<Integer>,
+    pub migrate_from_chat_id: Option<Integer>,
+    pub pinned_message: Option<Box<Message>>
 }
 
 #[derive(Deserialize, Debug)]
@@ -96,99 +90,99 @@ pub struct Updates(pub Vec<Update>);
 pub struct Update {
     pub update_id: Integer,
     pub message: Option<Message>,
-    edited_message: Option<Message>,
-    channel_post: Option<Message>,
-    edited_channel_post: Option<Message>,
-    inline_query: Option<()>,
-    chosen_inline_result: Option<()>,
-    callback_query: Option<()>
+    pub edited_message: Option<Message>,
+    pub channel_post: Option<Message>,
+    pub edited_channel_post: Option<Message>,
+    pub inline_query: Option<()>,
+    pub chosen_inline_result: Option<()>,
+    pub callback_query: Option<()>
 }
 
 /// This object represents one size of a photo or a file / sticker thumbnail.
 #[derive(Deserialize, Debug, Clone)]
 pub struct PhotoSize {
     pub file_id: String,
-    width: Integer,
-    height: Integer,
-    file_size: Option<Integer>
+    pub width: Integer,
+    pub height: Integer,
+    pub file_size: Option<Integer>
 }
 
 /// This object represents an audio file to be treated as music by the Telegram clients.
 #[derive(Deserialize, Debug)]
 pub struct Audio {
-    file_id: String,
-    duration: Integer,
-    performer: Option<String>,
-    title: Option<String>,
-    mime_type: Option<String>,
-    file_size: Option<Integer>
+    pub file_id: String,
+    pub duration: Integer,
+    pub performer: Option<String>,
+    pub title: Option<String>,
+    pub mime_type: Option<String>,
+    pub file_size: Option<Integer>
 }
 
 /// This object represents a general file (as opposed to photos, voice messages and audio files).
 #[derive(Deserialize, Debug)]
 pub struct Document {
-    file_id: String,
-    thumb: Option<PhotoSize>,
-    file_name: Option<String>,
-    mime_type: Option<String>,
-    file_size: Option<Integer>
+    pub file_id: String,
+    pub thumb: Option<PhotoSize>,
+    pub file_name: Option<String>,
+    pub mime_type: Option<String>,
+    pub file_size: Option<Integer>
 }
 
 /// This object represents a sticker.
 #[derive(Deserialize, Debug)]
 pub struct Sticker {
-    file_id: String,
-    width: Integer,
-    height: Integer,
-    thumb: Option<PhotoSize>,
-    emoji: Option<String>,
-    file_size: Option<Integer>
+    pub file_id: String,
+    pub width: Integer,
+    pub height: Integer,
+    pub thumb: Option<PhotoSize>,
+    pub emoji: Option<String>,
+    pub file_size: Option<Integer>
 }
 
 /// This object represents a video file.
 #[derive(Deserialize, Debug)]
 pub struct Video {
-    file_id: String,
-    width: Integer,
-    height: Integer,
-    duration: Integer,
-    thumb: Option<PhotoSize>,
-    mime_type: Option<String>,
-    file_size: Option<String>
+    pub file_id: String,
+    pub width: Integer,
+    pub height: Integer,
+    pub duration: Integer,
+    pub thumb: Option<PhotoSize>,
+    pub mime_type: Option<String>,
+    pub file_size: Option<String>
 }
 
 /// This object represents a voice note.
 #[derive(Deserialize, Debug)]
 pub struct Voice {
-    file_id: String,
-    duration: Integer,
-    mime_type: Option<String>,
-    file_size: Option<String>
+    pub file_id: String,
+    pub duration: Integer,
+    pub mime_type: Option<String>,
+    pub file_size: Option<String>
 }
 
 /// This object represents a phone contact.
 #[derive(Deserialize, Debug)]
 pub struct Contact {
-    phone_number: String,
-    first_name: String,
-    last_name: String,
-    user_id: Integer
+    pub phone_number: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub user_id: Integer
 }
 
 /// This object represents a point on the map.
 #[derive(Deserialize, Debug)]
 pub struct Location {
-    longitude: f32,
-    latitude: f32
+    pub longitude: f32,
+    pub latitude: f32
 }
 
 /// This object represents a venue.
 #[derive(Deserialize, Debug)]
 pub struct Venue {
-    location: Location,
-    title: String,
-    address: String,
-    foursquare_id: Option<String>
+    pub location: Location,
+    pub title: String,
+    pub address: String,
+    pub foursquare_id: Option<String>
 }
 
 /// This object represent a user's profile pictures.
@@ -204,19 +198,19 @@ pub struct UserProfilePhotos {
 /// getFile.
 #[derive(Deserialize, Debug)]
 pub struct File {
-    file_id: String,
-    file_size: Option<Integer>,
-    file_path: Option<String>
+    pub file_id: String,
+    pub file_size: Option<Integer>,
+    pub file_path: Option<String>
 }
 
 /// This object represents a custom keyboard with reply options (see Introduction to bots for
 /// details and examples).
 #[derive(Deserialize, Debug)]
 pub struct ReplyKeyboardMarkup {
-    keyboard: Vec<KeyboardButton>,
-    resize_keyboard: Option<bool>,
-    one_time_keyboard: Option<bool>,
-    selective: Option<bool>
+    pub keyboard: Vec<KeyboardButton>,
+    pub resize_keyboard: Option<bool>,
+    pub one_time_keyboard: Option<bool>,
+    pub selective: Option<bool>
 }
 
 /// This object represents one button of the reply keyboard. For simple text buttons String can be
@@ -224,9 +218,9 @@ pub struct ReplyKeyboardMarkup {
 /// exclusive.
 #[derive(Deserialize, Debug)]
 pub struct KeyboardButton {
-    text: String,
-    request_contact: Option<bool>,
-    request_location: Option<bool>
+    pub text: String,
+    pub request_contact: Option<bool>,
+    pub request_location: Option<bool>
 }
 
 /// Upon receiving a message with this object, Telegram clients will remove the current custom
@@ -235,26 +229,26 @@ pub struct KeyboardButton {
 /// hidden immediately after the user presses a button (see ReplyKeyboardMarkup).
 #[derive(Deserialize, Debug)]
 pub struct ReplyKeyboardRemove {
-    remove_keyboard: bool,
-    selective: Option<bool>
+    pub remove_keyboard: bool,
+    pub selective: Option<bool>
 }
 
 /// This object represents an inline keyboard that appears right next to the message it belongs to.
 #[derive(Deserialize, Debug)]
 pub struct InlineKeyboardMarkup {
-    inline_keyboard: Vec<InlineKeyboardButton>
+    pub inline_keyboard: Vec<InlineKeyboardButton>
 }
 
 /// This object represents one button of an inline keyboard. You must use exactly one of the
 /// optional fields.
 #[derive(Deserialize, Debug)]
 pub struct InlineKeyboardButton {
-    text: String,
-    url: Option<String>,
-    callback_data: Option<String>,
-    switch_inline_query: Option<String>,
-    switch_inline_query_current_chat: Option<String>,
-    callback_game: Option<CallbackGame>
+    pub text: String,
+    pub url: Option<String>,
+    pub callback_data: Option<String>,
+    pub switch_inline_query: Option<String>,
+    pub switch_inline_query_current_chat: Option<String>,
+    pub callback_game: Option<CallbackGame>
 }
 
 /// This object represents an incoming callback query from a callback button in an inline keyboard.
@@ -264,13 +258,13 @@ pub struct InlineKeyboardButton {
 /// game_short_name will be present.
 #[derive(Deserialize, Debug)]
 pub struct CallbackQuery {
-    id: String,
-    from: User,
-    message: Option<Message>,
-    inline_message_id: Option<String>,
-    chat_instance: Option<String>,
-    data: Option<String>,
-    game_short_name: Option<String>
+    pub id: String,
+    pub from: User,
+    pub message: Option<Message>,
+    pub inline_message_id: Option<String>,
+    pub chat_instance: Option<String>,
+    pub data: Option<String>,
+    pub game_short_name: Option<String>
 }
 
 /// Upon receiving a message with this object, Telegram clients will display a reply interface to
@@ -279,22 +273,22 @@ pub struct CallbackQuery {
 /// sacrifice privacy mode.
 #[derive(Deserialize, Debug)]
 pub struct ForceReply {
-    force_reply: bool,
-    selective: Option<bool>
+    pub force_reply: bool,
+    pub selective: Option<bool>
 }
     
 /// This object contains information about one member of the chat.
 #[derive(Deserialize, Debug)]
 pub struct ChatMember {
-    user: User,
-    status: String
+    pub user: User,
+    pub status: String
 }
 
 /// Contains information about why a request was unsuccessfull.
 #[derive(Deserialize, Debug)]
 pub struct ResponseParameter {
-    migrate_to_chat_id: Option<Integer>,
-    retry_after: Option<Integer>
+    pub migrate_to_chat_id: Option<Integer>,
+    pub retry_after: Option<Integer>
 }
 
 /// A placeholder, currently holds no information. Use BotFather to set up your game.

@@ -1,6 +1,6 @@
 [package]
 name = "telebot"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["bytesnake <bytesnake@mailbox.org>"]
 license = "MIT"
 description = "A wrapper around the telegram bot api, powered by futures"
@@ -18,4 +18,4 @@ curl = "0.4.1"
 futures = "0.1.7"     
 tokio-core = "0.1.2"
 tokio-curl = "0.1.6"
-telebot-derive = "0.0.2"
+telebot-derive = "0.0.4"

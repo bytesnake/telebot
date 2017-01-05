@@ -65,7 +65,6 @@ impl Bot {
 
     /// Creates a new request and add a file and some more form data to it
     pub fn fetch_formdata<'a, T>(&self, func: &str, msg: Value, mut file: T, kind: &str, file_name: &str) -> impl Future<Item=String, Error=Error> + 'a where T: io::Read {
-        //debug!("Send FormData {}",msg);
         let mut content = Vec::new();
 
         let mut a = Easy::new();

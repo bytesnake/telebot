@@ -19,3 +19,4 @@ pub mod bot;
 pub mod error;
 pub mod objects;
 pub mod functions;
+pub mod file;
