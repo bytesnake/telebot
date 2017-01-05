@@ -12,30 +12,6 @@ Add this to your `Cargo.toml`
 telebot = "0.0.5"
 ```
 
-## Find a Telegram function in the source code
-All available functions are listed in src/functions.rs. For example consider sendLocation:
-``` rust
-/// Use this method to send point on the map. On success, the sent Message is returned.
-#[derive(TelegramFunction, Serialize)]
-#[call = "sendLocation"]
-#[answer = "Message"]
-#[function = "location"]
-pub struct SendLocation {
-    chat_id: u32,
-    latitude: f32,
-    longitude: f32,
-#[serde(skip_serializing_if="Option::is_none")]
-    disable_notification: Option<bool>,
-#[serde(skip_serializing_if="Option::is_none")]                                                                                                             
-    reply_to_message_id: Option<u32>,
-#[serde(skip_serializing_if="Option::is_none")]
-    reply_markup: Option<NotImplemented>
-}
-```
-
-The field "function" defines the name of the function in the local API. Each optional field in the struct can be changed by calling the function with the name of the field.
-So for example to send the location of Paris to chat 432432 silently: ` bot.location(432432, 48.8566, 2.3522).disable_notification(true).send() `
-
 ## Example
 ``` rust
 extern crate telebot;
@@ -68,15 +44,30 @@ fn main() {
 
     bot.register(handle);
 
-    let handle2 = bot.new_cmd("/send")
-        .and_then(|(bot, msg)| {
-            let file = File::open("./test.png").unwrap();
-
-            bot.photo(msg.chat.id).file(("test.png", file)).send()
-        });
-
-    bot.register(handle2);
-
     bot.run(&mut lp).unwrap();
 }
 ```
+
+## Find a Telegram function in the source code
+All available functions are listed in src/functions.rs. For example consider sendLocation:
+``` rust
+/// Use this method to send point on the map. On success, the sent Message is returned.
+#[derive(TelegramFunction, Serialize)]
+#[call = "sendLocation"]
+#[answer = "Message"]
+#[function = "location"]
+pub struct SendLocation {
+    chat_id: u32,
+    latitude: f32,
+    longitude: f32,
+#[serde(skip_serializing_if="Option::is_none")]
+    disable_notification: Option<bool>,
+#[serde(skip_serializing_if="Option::is_none")]                                                                                                             
+    reply_to_message_id: Option<u32>,
+#[serde(skip_serializing_if="Option::is_none")]
+    reply_markup: Option<NotImplemented>
+}
+```
+
+The field "function" defines the name of the function in the local API. Each optional field in the struct can be changed by calling the function with the name of the field.
+So for example to send the location of Paris to chat 432432 silently: ` bot.location(432432, 48.8566, 2.3522).disable_notification(true).send() `
