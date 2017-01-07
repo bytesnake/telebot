@@ -157,7 +157,7 @@ pub struct Voice {
     pub file_id: String,
     pub duration: Integer,
     pub mime_type: Option<String>,
-    pub file_size: Option<String>
+    pub file_size: Option<Integer>
 }
 
 /// This object represents a phone contact.

@@ -6,11 +6,7 @@ use telebot::bot;
 use tokio_core::reactor::Core;
 use futures::stream::Stream;
 use std::env;
-use std::fs::File;
 use futures::IntoFuture;
-
-// import all available functions
-use telebot::functions::*;
 
 fn main() {
     // Create a new tokio core
@@ -21,7 +17,7 @@ fn main() {
         .update_interval(200);
 
     let stream = bot.get_stream()
-        .and_then(|(bot, msg)| {
+        .and_then(|(_, msg)| {
             println!("Received: {:#?}",msg);
 
             Ok(())
