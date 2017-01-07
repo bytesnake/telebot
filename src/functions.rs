@@ -9,11 +9,9 @@ use objects::{Integer, NotImplemented};
 use error::Error;
 use file;
 use futures::Future;
-use std::io;
 use std::rc::Rc;
-use futures::IntoFuture;
 
-/// A strongly typed parse_mode field which indicates the type of text
+/// The strongly typed version of the parse_mode field which indicates the type of text
 pub enum ParseMode {
     Markdown,
     HTML,
@@ -32,7 +30,7 @@ impl Into<String> for ParseMode {
     }
 }
 
-/// A strongly typed action field which indicates the type of action
+/// The strongly typed version of the action field which indicates the type of action
 pub enum Action {
     Typing,
     UploadPhoto,

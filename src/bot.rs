@@ -75,8 +75,6 @@ impl Bot {
         //println!("Content size: {}", size);
 
         for (key, val) in msg.as_object().unwrap().iter() {
-            //println!("{:?}: {:?}", key,val);
-
             form.part(key).contents(format!("{:?}",val).as_bytes()).add().unwrap();
         }
         
@@ -164,7 +162,7 @@ impl RcBot {
     }
    
     /// Creates a new command and returns a stream which will yield a message when the command is send
-    pub fn new_cmd(&self, cmd: &str) -> impl Stream<Item=(RcBot,  objects::Message), Error=Error> {//UnboundedReceiver<(RcBot, objects::Message)> {
+    pub fn new_cmd(&self, cmd: &str) -> impl Stream<Item=(RcBot,  objects::Message), Error=Error> {
         let (sender, receiver) = mpsc::unbounded();
     
         self.inner.handlers.borrow_mut().insert(cmd.into(), sender);
@@ -180,7 +178,7 @@ impl RcBot {
     /// The main update loop, the update function will be called every update_interval milliseconds
     /// When an update is available the last_id will be set and the message text will be
     /// filtered for commands
-    /// The message will be forwarded to the return strem if no command was found
+    /// The message will be forwarded to the returned stream if no command was found
     pub fn get_stream<'a>(&'a self) -> impl Stream<Item=(RcBot, objects::Update), Error=Error> + 'a{
         use functions::*;
 
@@ -197,21 +195,31 @@ impl RcBot {
                 Ok(x) 
             })
         .filter_map(move |mut val| {
-            if let Some(mut message) = val.message.take() {
+            //let msg = val.message.take();
+
+            let mut forward: Option<String> = None;
+
+            if let Some(ref mut message) = val.message {
                 if let Some(text) = message.text.clone() {
                     let mut content = text.split_whitespace();
                     if let Some(cmd) = content.next() {
-                        if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(cmd) {
-                            message.text = Some(content.map(|x| format!("{} ",x)).collect());
+                        if self.inner.handlers.borrow_mut().contains_key(cmd) {
+                            message.text = Some(content.collect::<Vec<&str>>().join(" "));
 
-                            sender.send((self.clone(), message)).unwrap();
-                            return None;
+                            forward = Some(cmd.into());
                         }
                     }
                 }
             }
-            
-            return Some((self.clone(), val));
+           
+            if let Some(cmd) = forward {
+                if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(&cmd) {
+                    sender.send((self.clone(), val.message.unwrap())).unwrap();
+                }
+                return None;
+            } else {
+                return Some((self.clone(), val));
+            }
         })
     }
    
