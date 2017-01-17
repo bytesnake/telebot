@@ -61,7 +61,7 @@ impl Into<String> for Action {
 
 /// A simple method for testing your bot's auth token. Requires no parameters. Returns basic
 /// information about the bot in form of a User object.
-#[derive(TelegramFunction, Serialize)]
+#[derive(Serialize, TelegramFunction)]
 #[call = "getMe"]
 #[answer = "User"]
 #[function = "get_me"]

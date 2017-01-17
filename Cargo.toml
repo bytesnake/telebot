@@ -1,6 +1,6 @@
 [package]
 name = "telebot"
-version = "0.0.7"
+version = "0.0.8"
 
 authors = ["bytesnake <bytesnake@mailbox.org>"]
 license = "MIT"
@@ -13,14 +13,11 @@ documentation = "https://docs.rs/telebot"
 keywords = ["telebot", "telegram", "bot", "chat"]
 
 [dependencies]
-serde = "0.8.20"
-serde_json = "0.8"
-serde_derive = "0.8.20"
+serde = "0.8"
+serde_json = "0.8.4"
+serde_derive = "0.8"
 curl = "0.4.1"      
 futures = "0.1.7"     
 tokio-core = "0.1.2"
 tokio-curl = "0.1.6"
-#telebot-derive = "0.0.4"
-
-[dependencies.telebot-derive]
-path = "/home/lorenz/tmp/accessors"
+telebot-derive = "0.0.5"

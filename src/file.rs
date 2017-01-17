@@ -5,6 +5,7 @@
 use std::io::Read;
 use std::fs;
 
+/// A Telegram file which contains a readable source and a filename
 pub struct File {
     pub name: String,
     pub source: Box<Read>
@@ -19,7 +20,7 @@ impl<'a> From<&'a str> for File {
     }
 }
 
-/// Construct a Telegram file from a object which implements the Read trait
+/// Construct a Telegram file from an object which implements the Read trait
 impl<'a, S: Read+'static> From<(&'a str, S)> for File {
     fn from((path, source): (&'a str, S)) -> File where S: Read + 'static {
         File { name: path.into(), source: Box::new(source) }

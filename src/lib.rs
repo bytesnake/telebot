@@ -39,7 +39,6 @@
 //! ```
 
 #![feature(conservative_impl_trait)]
-#![feature(proc_macro)]
 #![feature(custom_attribute)]
 #![allow(unused_attributes)]
 

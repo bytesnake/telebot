@@ -1,3 +1,6 @@
+//! This is the actual Bot module. For ergonomic reasons there is a RcBot which composes the real bot
+//! as an underlying field. You should always use RcBot. 
+
 use objects;
 use error::Error;
 
@@ -44,10 +47,19 @@ pub struct Bot {
 
 impl Bot {
     pub fn new(handle: Handle, key: &str) -> Bot {
-        Bot { handle: handle.clone(), key: key.into(), last_id: Cell::new(0), update_interval: Cell::new(1000), handlers: RefCell::new(HashMap::new()), session: Session::new(handle.clone()) }
+        Bot { 
+            handle: handle.clone(), 
+            key: key.into(), 
+            last_id: Cell::new(0), 
+            update_interval: Cell::new(1000), 
+            handlers: RefCell::new(HashMap::new()), 
+            session: Session::new(handle.clone()) 
+        }
     }
 
-    /// Creates a new request and add a JSON message to it
+    /// Creates a new request and adds a JSON message to it. The returned Future contains a the
+    /// reply as a string.  This method should be used if no file is added because a JSON msg is
+    /// always compacter than a formdata one.
     pub fn fetch_json<'a>(&self, func: &str, msg: &str) -> impl Future<Item=String, Error=Error> + 'a{
         //debug!("Send JSON: {}", msg);
         
@@ -60,26 +72,28 @@ impl Bot {
         a.post(true).unwrap();
 
         self._fetch(func, a)
-    
     }
 
-    /// Creates a new request and add a file and some more form data to it
+    /// Creates a new request with some byte content (e.g. a file). The method properties have to be 
+    /// in the formdata setup and cannot be sent as JSON.
     pub fn fetch_formdata<'a, T>(&self, func: &str, msg: Value, mut file: T, kind: &str, file_name: &str) -> impl Future<Item=String, Error=Error> + 'a where T: io::Read {
         let mut content = Vec::new();
 
         let mut a = Easy::new();
         let mut form = Form::new();
         
+        // try to read the byte content to a vector
         let _ = file.read_to_end(&mut content).unwrap();
 
-        //println!("Content size: {}", size);
-
+        // add properties
         for (key, val) in msg.as_object().unwrap().iter() {
             form.part(key).contents(format!("{:?}",val).as_bytes()).add().unwrap();
         }
         
+        // add the file
         form.part(kind).buffer(file_name, content).content_type("application/octet-stream").add().unwrap();
 
+        // create a http post request
         a.post(true).unwrap();
         a.httppost(form).unwrap();
 
@@ -175,10 +189,10 @@ impl RcBot {
         self.inner.handle.spawn(hnd.for_each(|_| Ok(())).into_future().map(|_| ()).map_err(|_| ()));
     }
    
-    /// The main update loop, the update function will be called every update_interval milliseconds
-    /// When an update is available the last_id will be set and the message text will be
-    /// filtered for commands
-    /// The message will be forwarded to the returned stream if no command was found
+    /// The main update loop, the update function is called every update_interval milliseconds
+    /// When an update is available the last_id will be updated and the message is filtered
+    /// for commands
+    /// The message is forwarded to the returned stream if no command was found
     pub fn get_stream<'a>(&'a self) -> impl Stream<Item=(RcBot, objects::Update), Error=Error> + 'a{
         use functions::*;
 
@@ -195,8 +209,6 @@ impl RcBot {
                 Ok(x) 
             })
         .filter_map(move |mut val| {
-            //let msg = val.message.take();
-
             let mut forward: Option<String> = None;
 
             if let Some(ref mut message) = val.message {
