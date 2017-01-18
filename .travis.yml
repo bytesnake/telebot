@@ -7,3 +7,7 @@ sudo: false
 notifications:
     email:
         on_success: never
+
+script:
+    cargo build --verbose
+    for i in examples/*; do cargo build --verbose --example $(basename $i .rs); done
