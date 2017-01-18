@@ -2,7 +2,7 @@ extern crate telebot;
 extern crate tokio_core;
 extern crate futures;
 
-use telebot::bot;
+use telebot::{RcBot, Error};
 use tokio_core::reactor::Core;
 use futures::stream::Stream;
 use futures::Future;
@@ -16,12 +16,12 @@ fn main() {
     let mut lp = Core::new().unwrap();
 
     // Create the bot
-    let bot = bot::RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap())
+    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap())
         .update_interval(200);
 
     // Register a location command which will send a location to requests like /location 2.321 12.32
     enum LocationErr {
-        Telegram(telebot::error::Error),
+        Telegram(Error),
         WrongLocationFormat
     }
 
@@ -60,7 +60,7 @@ fn main() {
 
     // Register a get_my_photo command which will send the own profile photo to the chat
     enum PhotoErr {
-        Telegram(telebot::error::Error),
+        Telegram(Error),
         NoPhoto
     }
 

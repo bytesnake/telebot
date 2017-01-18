@@ -66,6 +66,10 @@ extern crate futures;
 extern crate tokio_core;
 extern crate tokio_curl;
 
+pub use bot::RcBot;
+pub use error::Error;
+pub use file::File;
+
 pub mod bot;
 pub mod error;
 pub mod objects;
