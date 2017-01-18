@@ -10,4 +10,4 @@ notifications:
 
 script:
     cargo build --verbose
-    for i in examples/*; do cargo build --verbose --example $(basename $i .rs); done
+    'for i in examples/*; do cargo build --verbose --example $(basename $i .rs); done'
