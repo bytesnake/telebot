@@ -93,7 +93,7 @@ pub struct Update {
     pub edited_message: Option<Message>,
     pub channel_post: Option<Message>,
     pub edited_channel_post: Option<Message>,
-    pub inline_query: Option<()>,
+    pub inline_query: Option<InlineQuery>,
     pub chosen_inline_result: Option<()>,
     pub callback_query: Option<()>
 }
@@ -294,3 +294,15 @@ pub struct ResponseParameter {
 /// A placeholder, currently holds no information. Use BotFather to set up your game.
 #[derive(Deserialize, Debug)]
 pub struct CallbackGame;
+
+///This object represents an incoming inline query. When the user sends an empty query, youur bot
+///could return some default or  trending results.
+#[derive(Deserialize,Debug)]
+pub struct InlineQuery{
+    pub id: String,
+    pub from: User,
+    pub location: Option<Location>,
+    pub query: String,
+    pub offset: String
+}
+
