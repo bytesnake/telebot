@@ -93,7 +93,7 @@ pub struct Update {
     pub edited_message: Option<Message>,
     pub channel_post: Option<Message>,
     pub edited_channel_post: Option<Message>,
-    pub inline_query: Option<()>,
+    pub inline_query: Option<InlineQuery>,
     pub chosen_inline_result: Option<()>,
     pub callback_query: Option<()>
 }
@@ -638,5 +638,6 @@ pub struct ChosenInlineResult {
     pub from: User,
     pub location: Option<Location>,
     pub inline_message_id: Option<String>,
-    pub query: String
+    pub offset: String
 }
+
