@@ -11,7 +11,7 @@ pub type Vector<T> = Vec<T>;
 pub type NotImplemented = ();
 
 /// This object represents a Telegram user or bot.
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct User {
     pub id: Integer,
     pub first_name: String,
@@ -170,7 +170,7 @@ pub struct Contact {
 }
 
 /// This object represents a point on the map.
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Location {
     pub longitude: f32,
     pub latitude: f32
@@ -234,14 +234,14 @@ pub struct ReplyKeyboardRemove {
 }
 
 /// This object represents an inline keyboard that appears right next to the message it belongs to.
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct InlineKeyboardMarkup {
     pub inline_keyboard: Vec<InlineKeyboardButton>
 }
 
 /// This object represents one button of an inline keyboard. You must use exactly one of the
 /// optional fields.
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct InlineKeyboardButton {
     pub text: String,
     pub url: Option<String>,
@@ -292,5 +292,351 @@ pub struct ResponseParameter {
 }
 
 /// A placeholder, currently holds no information. Use BotFather to set up your game.
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CallbackGame;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum InlineQueryResult {
+    CachedAudio(InlineQueryResultCachedAudio),
+    CachedDocument(InlineQueryResultCachedDocument),
+    CachedGif(InlineQueryResultCachedGif),
+    CachedMpeg4Gif(InlineQueryResultCachedMpeg4Gif),
+    CachedPhoto(InlineQueryResultCachedPhoto),
+    CachedSticker(InlineQueryResultCachedSticker),
+    CachedVideo(InlineQueryResultCachedVideo),
+    CachedVoice(InlineQueryResultCachedVoice),
+    Article(InlineQueryResultArticle),
+    Audio(InlineQueryResultAudio),
+    Contact(InlineQueryResultContact),
+    Game(InlineQueryResultGame),
+    Document(InlineQueryResultDocument),
+    Gif(InlineQueryResultGif),
+    Location(InlineQueryResultLocation),
+    Mpeg4Gif(InlineQueryResultMpeg4Gif),
+    Photo(InlineQueryResultPhoto),
+    Venue(InlineQueryResultVenue),
+    Video(InlineQueryResultVideo),
+    Voice(InlineQueryResultVoice)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultArticle {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub title: String,
+    pub input_message_content: InputMessageContent,
+    pub reply_markup: InlineKeyboardMarkup,
+    pub url: Option<String>,
+    pub hide_url: Option<Boolean>,
+    pub description: Option<String>,
+    pub thumb_url: Option<String>,
+    pub thumb_width: Option<Integer>,
+    pub thumb_height: Option<Integer>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultPhoto {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub photo_url: String,
+    pub thumb_url: String,
+    pub photo_width: Option<Integer>,
+    pub photo_height: Option<Integer>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub caption: Option<String>,
+    pub reply_markup: Option<()>,
+    pub input_message_content: Option<()>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultGif {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub gif_url: String,
+    pub gif_width: Option<Integer>,
+    pub gif_height: Option<Integer>,
+    pub thumb_url: String,
+    pub title: Option<String>,
+    pub caption: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultMpeg4Gif {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub mpeg4_url: String,
+    pub mpeg4_width: Option<Integer>,
+    pub mpeg4_height: Option<Integer>,
+    pub thumb_url: String,
+    pub title: Option<String>,
+    pub caption: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultVideo {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub video_url: String,
+    pub mime_type: String,
+    pub thumb_url: String,
+    pub title: String,
+    pub caption: Option<String>,
+    pub video_width: Option<Integer>,
+    pub video_height: Option<Integer>,
+    pub video_duration: Option<Integer>,
+    pub description: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultAudio {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub audio_url: String,
+    pub title: String,
+    pub caption: Option<String>,
+    pub performer: Option<String>,
+    pub audio_duration: Option<Integer>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultVoice {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub voice_url: String,
+    pub title: String,
+    pub caption: Option<String>,
+    pub voice_duration: Option<Integer>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultDocument {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub title: String,
+    pub caption: Option<String>,
+    pub document_url: String,
+    pub mime_type: String,
+    pub description: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>,
+    pub thumb_url: Option<String>,
+    pub thumb_width: Option<Integer>,
+    pub thumb_height: Option<Integer>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultLocation {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub title: String,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>,
+    pub thumb_url: Option<String>,
+    pub thumb_width: Option<Integer>,
+    pub thumb_height: Option<Integer>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultVenue {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub title: String,
+    pub address: String,
+    pub foursquare_id: String,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>,
+    pub thumb_url: Option<String>,
+    pub thumb_width: Option<Integer>,
+    pub thumb_height: Option<Integer>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultContact {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub phone_number: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>,
+    pub thumb_url: Option<String>,
+    pub thumb_width: Option<Integer>,
+    pub thumb_height: Option<Integer>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultGame {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub game_short_name: String,
+    pub reply_markup: Option<InlineKeyboardMarkup>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultCachedPhoto {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub photo_file_id: String,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub caption: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultCachedGif {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub gif_file_id: String,
+    pub title: Option<String>,
+    pub caption: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultCachedMpeg4Gif {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub mpeg4_file_id: String,
+    pub title: Option<String>,
+    pub caption: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultCachedSticker {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub sticker_file_id: String,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultCachedDocument {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub title: String,
+    pub document_file_id: String,
+    pub description: Option<String>,
+    pub caption: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultCachedVideo {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub video_file_id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub caption: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize,  Deserialize, Debug)]
+pub struct InlineQueryResultCachedVoice {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub voice_file_id: String,
+    pub title: String,
+    pub caption: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InlineQueryResultCachedAudio {
+    #[serde(rename="type")]
+    pub kind: String,
+    pub id: String,
+    pub audio_file_id: String,
+    pub caption: Option<String>,
+    pub reply_markup: Option<InlineKeyboardMarkup>,
+    pub input_message_content: Option<InputMessageContent>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum InputMessageContent {
+    InputTextMessageContent(InputTextMessageContent),
+    InputLocationMessageContent(InputLocationMessageContent),
+    InputVenueMessageContent(InputVenueMessageContent),
+    InputContactMessageContent(InputContactMessageContent),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InputTextMessageContent {
+    pub message_text: String,
+    pub parse_mode: Option<String>,
+    pub disable_web_page_preview: Option<Boolean>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InputLocationMessageContent {
+    pub latitude: f64,
+    pub longitude: f64
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InputVenueMessageContent {
+    pub latitude: f64,
+    pub longitude: f64,
+    pub title: String,
+    pub address: String,
+    pub foursquare_id: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InputContactMessageContent {
+    pub phone_number: String,
+    pub first_name: String,
+    pub last_name: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ChosenInlineResult {
+    pub result_id: String,
+    pub from: User,
+    pub location: Option<Location>,
+    pub inline_message_id: Option<String>,
+    pub query: String
+}

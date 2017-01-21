@@ -426,3 +426,19 @@ pub struct AnwerCallbackQuery {
     url: Option<String>,
     cache_time: Option<Integer>
 }
+
+/// Use this method to send answers to an inline query. On success, True is returned.
+/// No more than 50 results per query are allowed.
+#[derive(TelegramFunction, Serialize)]
+#[call = "answerInlineQuery"]
+#[answer = "Boolean"]
+#[function = "answer_inline_query"]
+pub struct AnswerInlineQuery {
+    inline_query_id: String,
+    results: Vec<objects::InlineQueryResult>,
+    cache_time: Option<Integer>,
+    is_personal: Option<bool>,
+    next_offset: Option<String>,
+    switch_pm_text: Option<String>,
+    switch_pm_parameter: Option<String>
+}
