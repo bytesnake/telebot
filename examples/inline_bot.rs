@@ -1,12 +1,18 @@
 extern crate telebot;
 extern crate tokio_core;
 extern crate futures;
+extern crate erased_serde;
 
 use telebot::RcBot;
 use tokio_core::reactor::Core;
 use futures::stream::Stream;
 use std::env;
 use futures::IntoFuture;
+
+use erased_serde::Serialize;
+
+use telebot::functions::*;
+use telebot::objects::*;
 
 fn main() {
     // Create a new tokio core
@@ -17,10 +23,15 @@ fn main() {
         .update_interval(200);
 
     let stream = bot.get_stream()
-        .and_then(|(_, msg)| {
-            println!("Received: {:#?}",msg);
+        .filter_map(|(bot, msg)| msg.inline_query.map(|query| (bot, query)))
+        .and_then(|(bot, query)| {
+            let result: Vec<Box<Serialize>> = vec![
+                Box::new(
+                    InlineQueryResultArticle::new("Test".into(), Box::new(InputMessageContent::Text::new("This is a test".into())))
+                )
+            ];
 
-            Ok(())
+            bot.answer_inline_query(query.id, result).is_personal(true).send()
         });
 
     // enter the main loop

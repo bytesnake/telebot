@@ -61,7 +61,7 @@ impl Bot {
     /// reply as a string.  This method should be used if no file is added because a JSON msg is
     /// always compacter than a formdata one.
     pub fn fetch_json<'a>(&self, func: &str, msg: &str) -> impl Future<Item=String, Error=Error> + 'a{
-        //debug!("Send JSON: {}", msg);
+        println!("Send JSON: {}", msg);
         
         let mut header = List::new();
         header.append("Content-Type: application/json").unwrap();

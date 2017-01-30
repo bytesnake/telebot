@@ -1,6 +1,6 @@
 //! Available telegram functions, copied from https://core.telegram.org/bots/api#available-methods
 //!
-//! telebot-derive implements setter, getter and send methods to each struct
+//! telebot-derive implements setter, setter and send methods to each struct
 
 use bot::{Bot, RcBot};
 use serde_json;
@@ -10,6 +10,14 @@ use error::Error;
 use file;
 use futures::Future;
 use std::rc::Rc;
+use futures::Poll;
+use erased_serde::Serialize;
+
+pub trait TelegramSendable {
+    type Item;
+
+    fn send(self) -> Box<Future<Item=Self::Item, Error=Error>>;
+}
 
 /// The strongly typed version of the parse_mode field which indicates the type of text
 pub enum ParseMode {
@@ -61,13 +69,13 @@ impl Into<String> for Action {
 
 /// A simple method for testing your bot's auth token. Requires no parameters. Returns basic
 /// information about the bot in form of a User object.
-#[derive(Serialize, TelegramFunction)]
+#[derive(TelegramFunction, Serialize)]
 #[call = "getMe"]
 #[answer = "User"]
 #[function = "get_me"]
 pub struct GetMe;
 
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "getUpdates"]
 #[answer = "Updates"]
 #[function = "get_updates"]
@@ -83,7 +91,7 @@ pub struct GetUpdates {
 }
 
 /// Use this method to send text messages. On success, the sent Message is returned.
-#[derive(TelegramFunction,Serialize)]
+#[derive(TelegramFunction, Serialize)]
 #[call = "sendMessage"]
 #[answer = "Message"]
 #[function = "message"]
@@ -103,7 +111,7 @@ pub struct Message {
 }
 
 /// Use this method to send photos. On success, the sent Message is returned.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "sendPhoto"]
 #[answer = "Message"]
 #[function = "photo"]
@@ -126,7 +134,7 @@ pub struct SendPhoto {
 /// can currently send audio files of up to 50 MB in size, this limit may be changed in the future.
 ///
 /// For sending voice messages, use the sendVoice method instead.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "sendAudio"]
 #[answer = "Message"]
 #[function = "audio"]
@@ -153,7 +161,7 @@ pub struct SendAudio {
 /// Use this method to send general files. On success, the sent Message is returned. Bots can
 /// currently send files of any type of up to 50 MB in size, this limit may be changed in the
 /// future.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "sendDocument"]
 #[answer = "Message"]
 #[function = "document"]
@@ -172,7 +180,7 @@ pub struct SendDocument {
 }
 
 /// Use this method to send .webp stickers. On success, the sent Message is returned.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "sendSticker"]
 #[answer = "Message"]
 #[function = "sticker"]
@@ -191,7 +199,7 @@ pub struct SendSticker {
 /// Use this method to send video files, Telegram clients support mp4 videos (other formats may be
 /// sent as Document). On success, the sent Message is returned. Bots can currently send video
 /// files of up to 50 MB in size, this limit may be changed in the future.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "sendVideo"]
 #[answer = "Message"]
 #[function = "video"]
@@ -220,7 +228,7 @@ pub struct SendVideo {
 /// (other formats may be sent as Audio or Document). On success, the sent Message is returned.
 /// Bots can currently send voice messages of up to 50 MB in size, this limit may be changed in the
 /// future.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "sendVoice"]
 #[answer = "Message"]
 #[function = "voice"]
@@ -241,7 +249,7 @@ pub struct SendVoice {
 }
 
 /// Use this method to send point on the map. On success, the sent Message is returned.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "sendLocation"]
 #[answer = "Message"]
 #[function = "location"]
@@ -258,7 +266,7 @@ pub struct SendLocation {
 }
 
 /// Use this method to send information about a venue. On success, the sent Message is returned.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "sendVenue"]
 #[answer = "Message"]
 #[function = "venue"]
@@ -278,7 +286,7 @@ pub struct SendVenue {
 }
 
 /// Use this method to send phone contacts. On success, the sent Message is returned.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "sendContact"]
 #[answer = "Message"]
 #[function = "contact"]
@@ -298,7 +306,7 @@ pub struct SendContact {
 /// Use this method when you need to tell the user that something is happening on the bot's side.
 /// The status is set for 5 seconds or less (when a message arrives from your bot, Telegram clients
 /// clear its typing status). Returns True on success.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "sendChatAction"]
 #[answer = "Boolean"]
 #[function = "chat_action"]
@@ -309,7 +317,7 @@ pub struct SendAction {
 
 /// Use this method to get a list of profile pictures for a user. Returns a UserProfilePhotos
 /// object.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "getUserProfilePhotos"]
 #[answer = "UserProfilePhotos"]
 #[function = "get_user_profile_photos"]
@@ -326,7 +334,7 @@ pub struct GetUserProfilePhotos {
 /// can then be downloaded via the link https://api.telegram.org/file/bot<token>/<file_path>, where
 /// <file_path> is taken from the response. It is guaranteed that the link will be valid for at
 /// least 1 hour. When the link expires, a new one can be requested by calling getFile again.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "getFile"]
 #[answer = "File"]
 #[function = "get_file"]
@@ -338,7 +346,7 @@ pub struct GetFile {
 /// user will not be able to return to the group on their own using invite links, etc., unless
 /// unbanned first. The bot must be an administrator in the group for this to work. Returns True on
 /// success.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "kickChatMember"]
 #[answer = "Boolean"]
 #[function = "kick_chat_member"]
@@ -349,7 +357,7 @@ pub struct KickChatMember {
 
 /// Use this method for your bot to leave a group, supergroup or channel. Returns True on
 /// success.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "leaveChat"]
 #[answer = "Boolean"]
 #[function = "leave_chat"]
@@ -360,7 +368,7 @@ pub struct LeaveChat {
 /// Use this method to unban a previously kicked user in a supergroup. The user will not return to
 /// the group automatically, but will be able to join via link, etc. The bot must be an
 /// administrator in the group for this to work. Returns True on success.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "unbanChatMember"]
 #[answer = "Boolean"]
 #[function = "unban_chat_member"]
@@ -372,7 +380,7 @@ pub struct UnbanChatMember {
 /// Use this method to get up to date information about the chat (current name of the user for
 /// one-on-one conversations, current username of a user, group or channel, etc.). Returns a Chat
 /// object on success.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "getChat"]
 #[answer = "Chat"]
 #[function = "get_chat"]
@@ -384,7 +392,7 @@ pub struct GetChat {
 /// ChatMember objects that contains information about all chat administrators except other bots.
 /// If the chat is a group or a supergroup and no administrators were appointed, only the creator
 /// will be returned.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "getChatAdministrators"]
 #[answer = "Vector<objects::ChatMember>"]
 #[function = "unban_chat_administrators"]
@@ -393,7 +401,7 @@ pub struct GetChatAdministrators {
 }
 
 /// Use this method to get the number of members in a chat. Returns Int on success.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "getChatMembersCount"]
 #[answer = "Integer"]
 #[function = "get_chat_members_count"]
@@ -403,7 +411,7 @@ pub struct GetChatMemberCounts {
 
 /// Use this method to get information about a member of a chat. Returns a ChatMember object on
 /// success.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "getChatMember"]
 #[answer = "ChatMember"]
 #[function = "get_chat_members_count"]
@@ -415,7 +423,7 @@ pub struct GetChatMember {
 /// Use this method to send answers to callback queries sent from inline keyboards. The answer will
 /// be displayed to the user as a notification at the top of the chat screen or as an alert. On
 /// success, True is returned.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "answerCallbackQuery"]
 #[answer = "Boolean"]
 #[function = "answer_callback_query"]
@@ -429,13 +437,13 @@ pub struct AnwerCallbackQuery {
 
 /// Use this method to send answers to an inline query. On success, True is returned.
 /// No more than 50 results per query are allowed.
-#[derive(TelegramFunction, Serialize)]
+#[derive(TelegramFunction,  Serialize)]
 #[call = "answerInlineQuery"]
 #[answer = "Boolean"]
 #[function = "answer_inline_query"]
 pub struct AnswerInlineQuery {
     inline_query_id: String,
-    results: Vec<objects::InlineQueryResult>,
+    results: Vec<Box<Serialize>>,
     cache_time: Option<Integer>,
     is_personal: Option<bool>,
     next_offset: Option<String>,
