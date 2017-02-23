@@ -58,7 +58,7 @@ pub struct Message {
     pub date: Integer,
     pub chat: Chat,
     pub forward_from: Option<User>,
-    pub forward_from_chat: Option<User>,
+    pub forward_from_chat: Option<Chat>,
     pub forward_from_message_id: Option<Integer>,
     pub forward_date: Option<Integer>,
     pub reply_to_message: Option<Box<Message>>,
