@@ -23,3 +23,4 @@ tokio-core = "0.1.2"
 tokio-curl = "0.1.6"
 uuid = { version = "0.2", features = ["v4"] }
 telebot-derive = "0.0.6"
+log = "0.3"
