@@ -1,4 +1,4 @@
-//! This is the actual Bot module. For ergonomic reasons there is a RcBot which composes the real bot
+//! This is the actual Bot module. For ergonomic reasons there is a RcBot which uses the real bot
 //! as an underlying field. You should always use RcBot. 
 
 use objects;
@@ -47,6 +47,8 @@ pub struct Bot {
 
 impl Bot {
     pub fn new(handle: Handle, key: &str) -> Bot {
+        debug!("Create a new bot with the key {}", key);
+        
         Bot { 
             handle: handle.clone(), 
             key: key.into(), 
@@ -61,7 +63,7 @@ impl Bot {
     /// reply as a string.  This method should be used if no file is added because a JSON msg is
     /// always compacter than a formdata one.
     pub fn fetch_json<'a>(&self, func: &str, msg: &str) -> impl Future<Item=String, Error=Error> + 'a{
-        println!("Send JSON: {}", msg);
+        debug!("Send JSON: {}", msg);
         
         let mut header = List::new();
         header.append("Content-Type: application/json").unwrap();
@@ -77,6 +79,7 @@ impl Bot {
     /// Creates a new request with some byte content (e.g. a file). The method properties have to be 
     /// in the formdata setup and cannot be sent as JSON.
     pub fn fetch_formdata<'a, T>(&self, func: &str, msg: Value, mut file: T, kind: &str, file_name: &str) -> impl Future<Item=String, Error=Error> + 'a where T: io::Read {
+        debug!("Send formdata: {}", msg.to_string());
         let mut content = Vec::new();
 
         let mut a = Easy::new();
@@ -136,15 +139,16 @@ impl Bot {
         //a.show_header(true).unwrap();
 
         self.session.perform(a)
-        .map_err(|_| Error::TokioCurl)
+        .map_err(|x| { Error::TokioCurl(x) })
         .map(move |_| {
             let response = result.lock().unwrap();
             String::from(str::from_utf8(&response).unwrap())
-        }).and_then(|x| {
+        }).and_then(move |x| {
+            debug!("Got a result from telegram: {}", x);
             // try to parse the result as a JSON and find the OK field.
             // If the ok field is true, then the string in "result" will be returned
             if let Ok(req) = serde_json::from_str::<Value>(&x) {
-                if let (Some(ok), res) = (req.find("ok").and_then(Value::as_bool), req.find("result")) {
+                if let (Some(ok), res) = (req.get("ok").and_then(Value::as_bool), req.get("result")) {
                     if ok {
                         if let Some(result) = res {
                             let answer = serde_json::to_string(result).unwrap();
@@ -153,7 +157,7 @@ impl Bot {
                         }
                     }
                     
-                    match req.find("description").and_then(Value::as_str) {
+                    match req.get("description").and_then(Value::as_str) {
                         Some(err) => Err(Error::Telegram(err.into())),
                         None => Err(Error::Telegram("Unknown".into()))
                     }
@@ -209,6 +213,7 @@ impl RcBot {
                 Ok(x) 
             })
         .filter_map(move |mut val| {
+            debug!("Got an update from Telegram: {:?}", val);
             let mut forward: Option<String> = None;
 
             if let Some(ref mut message) = val.message {
