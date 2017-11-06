@@ -3,14 +3,15 @@ name = "telebot"
 version = "0.2.1"
 
 authors = ["bytesnake <bytesnake@mailbox.org>"]
-license = "MIT"
+license = "MIT/Apache-2.0"
 description = "A wrapper around the telegram bot api, powered by futures"
 
 repository = "https://github.com/bytesnake/telebot"
 readme = "README.md"
 documentation = "https://docs.rs/telebot"
 
-keywords = ["telebot", "telegram", "bot", "chat"]
+categories = ["network-programming"]
+keywords = ["telebot", "telegram", "bot", "chat", "client", "async"]
 
 [dependencies]
 serde = "1.0"
