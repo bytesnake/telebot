@@ -11,7 +11,7 @@ readme = "README.md"
 documentation = "https://docs.rs/telebot"
 
 categories = ["network-programming"]
-keywords = ["telebot", "telegram", "bot", "chat", "client", "async"]
+keywords = ["telebot", "telegram", "bot", "chat", "async"]
 
 [dependencies]
 serde = "1.0"
