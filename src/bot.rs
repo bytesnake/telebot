@@ -203,7 +203,7 @@ impl RcBot {
         Interval::new(Duration::from_millis(self.inner.update_interval.get()), &self.inner.handle).unwrap()
             .map_err(|_| Error::Unknown)
             .and_then(move |_| self.get_updates().offset(self.inner.last_id.get()).send())
-            .map(|(_, x)| stream::iter(x.0.into_iter().map(|x| Ok(x)).collect::<Vec<Result<objects::Update, Error>>>()))
+            .map(|(_, x)| stream::iter_result(x.0.into_iter().map(|x| Ok(x)).collect::<Vec<Result<objects::Update, Error>>>()))
             .flatten()
             .and_then(move |x| {
                 if self.inner.last_id.get() < x.update_id as u32 +1 {
@@ -231,7 +231,7 @@ impl RcBot {
            
             if let Some(cmd) = forward {
                 if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(&cmd) {
-                    sender.send((self.clone(), val.message.unwrap())).unwrap();
+                    sender.unbounded_send((self.clone(), val.message.unwrap())).unwrap();
                 }
                 return None;
             } else {
