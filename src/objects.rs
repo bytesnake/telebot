@@ -10,9 +10,6 @@ pub type Integer = i64;
 pub type Vector<T> = Vec<T>;
 pub type NotImplemented = ();
 
-use std::rc::Rc;
-use bot::Bot;
-use file;
 use erased_serde::Serialize;
 use uuid::Uuid;
 
