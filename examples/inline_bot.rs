@@ -31,7 +31,7 @@ fn main() {
                             "Test".into(),
                             Box::new(InputMessageContent::Text::new("This is a test".into())),
                         ).reply_markup(InlineKeyboardMarkup::new(
-                            vec![vec![InlineKeyboardButton::new("Test Button")]],
+                            vec![vec![InlineKeyboardButton::new("Wikipedia".into()).url("http://wikipedia.org")]],
                         ))
                     ),
                 ];
