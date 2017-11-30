@@ -15,8 +15,7 @@ fn main() {
     let mut lp = Core::new().unwrap();
 
     // Create the bot
-    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap())
-        .update_interval(200);
+    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
 
     let text = r"
 Dearest creature in creation,
@@ -53,8 +52,7 @@ Scene, Melpomene, mankind.
 ...";
 
     let handle = bot.new_cmd("/send").and_then(move |(bot, msg)| {
-        bot
-            .document(msg.chat.id)
+        bot.document(msg.chat.id)
             .file(("poem.txt", text.as_bytes()))
             .caption("The Chaos")
             .send()

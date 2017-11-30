@@ -30,9 +30,13 @@ fn main() {
                         InlineQueryResultArticle::new(
                             "Test".into(),
                             Box::new(InputMessageContent::Text::new("This is a test".into())),
-                        ).reply_markup(InlineKeyboardMarkup::new(
-                            vec![vec![InlineKeyboardButton::new("Wikipedia".into()).url("http://wikipedia.org")]],
-                        ))
+                        ).reply_markup(InlineKeyboardMarkup::new(vec![
+                            vec![
+                                InlineKeyboardButton::new("Wikipedia".into()).url(
+                                    "http://wikipedia.org"
+                                ),
+                            ],
+                        ]))
                     ),
                 ];
 

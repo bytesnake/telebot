@@ -15,22 +15,20 @@ fn main() {
     let mut lp = Core::new().unwrap();
 
     // Create the bot
-    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap())
-        .update_interval(200);
+    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
 
     // Register a reply command which answers a message
-    let handle = bot.new_cmd("/reply")
-        .and_then(|(bot, msg)| {
-            let mut text = msg.text.unwrap().clone();
-            if text.is_empty() {
-                text = "<empty>".into();
-            }
+    let handle = bot.new_cmd("/reply").and_then(|(bot, msg)| {
+        let mut text = msg.text.unwrap().clone();
+        if text.is_empty() {
+            text = "<empty>".into();
+        }
 
-            bot.message(msg.chat.id, text).parse_mode("Text").send()
-        });
+        bot.message(msg.chat.id, text).parse_mode("Text").send()
+    });
 
     bot.register(handle);
- 
+
     // Enter the main loop
     bot.run(&mut lp).unwrap();
 }
