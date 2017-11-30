@@ -237,21 +237,26 @@ pub struct ReplyKeyboardRemove {
 }
 
 /// This object represents an inline keyboard that appears right next to the message it belongs to.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(setter, Serialize, Deserialize, Debug)]
 pub struct InlineKeyboardMarkup {
-    pub inline_keyboard: Vec<InlineKeyboardButton>
+    pub inline_keyboard: Vec<Vec<InlineKeyboardButton>>,
 }
 
 /// This object represents one button of an inline keyboard. You must use exactly one of the
 /// optional fields.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(setter, Serialize, Deserialize, Debug)]
 pub struct InlineKeyboardButton {
     pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub callback_data: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub switch_inline_query: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub switch_inline_query_current_chat: Option<String>,
-    pub callback_game: Option<CallbackGame>
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub callback_game: Option<CallbackGame>,
 }
 
 /// This object represents an incoming callback query from a callback button in an inline keyboard.
