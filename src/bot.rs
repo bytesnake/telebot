@@ -90,7 +90,7 @@ impl Bot {
 
         // add properties
         for (key, val) in msg.as_object().unwrap().iter() {
-            form.part(key).contents(format!("{:?}",val).as_bytes()).add().unwrap();
+            form.part(key).contents(format!("{}",val).as_bytes()).add().unwrap();
         }
         
         // add the file

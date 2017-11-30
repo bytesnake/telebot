@@ -26,4 +26,3 @@ impl<'a, S: Read+'static> From<(&'a str, S)> for File {
         File { name: path.into(), source: Box::new(source) }
     }
 }
-

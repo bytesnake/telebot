@@ -167,6 +167,7 @@ pub struct SendAudio {
 #[file_kind = "document"]
 pub struct SendDocument {
     chat_id: Integer,
+#[serde(skip_serializing_if="Option::is_none")]
     document: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     caption: Option<String>,
@@ -186,6 +187,7 @@ pub struct SendDocument {
 #[file_kind = "sticker"]
 pub struct SendSticker {
     chat_id: Integer,
+#[serde(skip_serializing_if="Option::is_none")]
     sticker: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
@@ -205,6 +207,7 @@ pub struct SendSticker {
 #[file_kind = "video"]
 pub struct SendVideo {
     chat_id: Integer,
+#[serde(skip_serializing_if="Option::is_none")]
     video: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     duration: Option<Integer>,
@@ -234,6 +237,7 @@ pub struct SendVideo {
 #[file_kind = "voice"]
 pub struct SendVoice {
     chat_id: Integer,
+#[serde(skip_serializing_if="Option::is_none")]
     voice: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     caption: Option<String>,
@@ -275,6 +279,7 @@ pub struct SendVenue {
     longitude: f32,
     title: String,
     address: String,
+#[serde(skip_serializing_if="Option::is_none")]
     foursquare_id: Option<String>,
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
