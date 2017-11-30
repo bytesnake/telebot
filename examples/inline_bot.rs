@@ -19,19 +19,23 @@ fn main() {
     let mut lp = Core::new().unwrap();
 
     // Create the bot
-    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap())
-        .update_interval(200);
+    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
 
     let stream = bot.get_stream()
         .filter_map(|(bot, msg)| msg.inline_query.map(|query| (bot, query)))
         .and_then(|(bot, query)| {
             let result: Vec<Box<Serialize>> = vec![
-                Box::new(
-                    InlineQueryResultArticle::new("Test".into(), Box::new(InputMessageContent::Text::new("This is a test".into())))
-                )
+                Box::new(InlineQueryResultArticle::new(
+                    "Test".into(),
+                    Box::new(InputMessageContent::Text::new(
+                        "This is a test".into(),
+                    )),
+                )),
             ];
 
-            bot.answer_inline_query(query.id, result).is_personal(true).send()
+            bot.answer_inline_query(query.id, result)
+                .is_personal(true)
+                .send()
         });
 
     // enter the main loop
