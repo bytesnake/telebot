@@ -12,18 +12,18 @@
 //! extern crate futures;
 
 //! use telebot::bot;
-//! use tokio_core::reactor::Core;                       
+//! use tokio_core::reactor::Core;
 //! use futures::stream::Stream;
 //! use futures::Future;
 //! use std::fs::File;
-//! 
+//!
 //! // import all available functions
 //! use telebot::functions::*;
-//! 
+//!
 //! fn main() {
 //!     // create a new event loop
 //!     let mut lp = Core::new().unwrap();
-//!     
+//!
 //!     // init the bot with the bot key and an update interval of 200ms
 //!     let bot = bot::RcBot::new(lp.handle(), "<TELEGRAM-BOT-TOKEN>")
 //!         .update_interval(200);

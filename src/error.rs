@@ -13,6 +13,5 @@ pub enum Error {
     // hard time
     JSON,
     // indicates an unknown error
-    Unknown
+    Unknown,
 }
-
