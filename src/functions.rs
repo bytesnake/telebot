@@ -111,6 +111,7 @@ pub struct Message {
 #[file_kind = "photo"]
 pub struct SendPhoto {
     chat_id: Integer,
+    #[serde(skip_serializing_if = "Option::is_none")]
     photo: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
@@ -134,6 +135,7 @@ pub struct SendPhoto {
 #[file_kind = "audio"]
 pub struct SendAudio {
     chat_id: Integer,
+    #[serde(skip_serializing_if = "Option::is_none")]
     audio: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
