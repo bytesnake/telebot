@@ -18,6 +18,7 @@ use tokio_core::reactor::{Handle, Core, Interval};
 use serde_json;
 use serde_json::value::Value;
 use futures::{Future, IntoFuture, Stream, stream};
+use futures::future::result;
 use futures::sync::mpsc;
 use futures::sync::mpsc::UnboundedSender;
 
@@ -62,117 +63,118 @@ impl Bot {
     /// Creates a new request and adds a JSON message to it. The returned Future contains a the
     /// reply as a string.  This method should be used if no file is added because a JSON msg is
     /// always compacter than a formdata one.
-    pub fn fetch_json<'a>(
+    pub fn fetch_json(
         &self,
-        func: &str,
-        msg: &str,
-    ) -> impl Future<Item = String, Error = Error> + 'a {
+        func: &'static str,
+        msg: String,
+    ) -> impl Future<Item = String, Error = Error> {
         debug!("Send JSON: {}", msg);
 
+        let json = self.build_json(msg);
+        let session = self.session.clone();
+        let key = self.key.clone();
+
+        result(json).and_then(move |a| _fetch(session, key, func, a))
+    }
+
+    fn build_json(&self, msg: String) -> Result<Easy, Error> {
         let mut header = List::new();
-        header.append("Content-Type: application/json").unwrap();
+
+        header.append("Content-Type: application/json")?;
 
         let mut a = Easy::new();
-        a.http_headers(header).unwrap();
-        a.post_fields_copy(msg.as_bytes()).unwrap();
-        a.post(true).unwrap();
 
-        self._fetch(func, a)
+        a.http_headers(header)?;
+        a.post_fields_copy(msg.as_bytes())?;
+        a.post(true)?;
+
+        Ok(a)
     }
+
 
     /// Creates a new request with some byte content (e.g. a file). The method properties have to be
     /// in the formdata setup and cannot be sent as JSON.
-    pub fn fetch_formdata<'a, T>(
+    pub fn fetch_formdata<T>(
         &self,
-        func: &str,
+        func: &'static str,
         msg: Value,
-        mut file: T,
+        file: T,
         kind: &str,
         file_name: &str,
-    ) -> impl Future<Item = String, Error = Error> + 'a
+    ) -> impl Future<Item = String, Error = Error>
     where
         T: io::Read,
     {
         debug!("Send formdata: {}", msg.to_string());
+
+        let formdata = self.build_formdata(msg, file, kind, file_name);
+        let session = self.session.clone();
+        let key = self.key.clone();
+
+        result(formdata).and_then(move |a| _fetch(session, key, func, a))
+    }
+
+    fn build_formdata<T>(
+        &self,
+        msg: Value,
+        mut file: T,
+        kind: &str,
+        file_name: &str,
+    ) -> Result<Easy, Error>
+    where
+        T: io::Read,
+    {
         let mut content = Vec::new();
 
-        let mut a = Easy::new();
+        file.read_to_end(&mut content)?;
+
+        let msg = msg.as_object().ok_or(Error::Unknown)?;
+
         let mut form = Form::new();
 
-        // try to read the byte content to a vector
-        let _ = file.read_to_end(&mut content).unwrap();
-
         // add properties
-        for (key, val) in msg.as_object().unwrap().iter() {
-            form.part(key)
-                .contents(format!("{}", val).as_bytes())
-                .add()
-                .unwrap();
+        for (key, val) in msg.iter() {
+            form.part(key).contents(format!("{}", val).as_bytes()).add()?;
         }
 
-        // add the file
         form.part(kind)
             .buffer(file_name, content)
             .content_type("application/octet-stream")
-            .add()
-            .unwrap();
+            .add()?;
 
-        // create a http post request
-        a.post(true).unwrap();
-        a.httppost(form).unwrap();
+        let mut a = Easy::new();
 
-        self._fetch(func, a)
+        a.post(true)?;
+        a.httppost(form)?;
+
+        Ok(a)
     }
+}
 
-    /// calls cURL and parses the result for an error
-    pub fn _fetch<'a>(
-        &self,
-        func: &str,
-        mut a: Easy,
-    ) -> impl Future<Item = String, Error = Error> + 'a {
-        let result = Arc::new(Mutex::new(Vec::new()));
+/// calls cURL and parses the result for an error
+pub fn _fetch(
+    session: Session,
+    key: String,
+    func: &str,
+    a: Easy,
+) -> impl Future<Item = String, Error = Error> {
+    let response_vec = Arc::new(Mutex::new(Vec::new()));
 
-        a.url(&format!(
-            "https://api.telegram.org/bot{}/{}",
-            self.key,
-            func
-        )).unwrap();
+    let req = prepare_fetch(a, Arc::clone(&response_vec), &key, func);
 
-        let r2 = result.clone();
-        a.write_function(move |data| {
-            r2.lock().unwrap().extend_from_slice(data);
-            Ok(data.len())
-        }).unwrap();
-
-        // print debug information
-        a.debug_function(|info, data| {
-            match info {
-                InfoType::DataOut => {
-                    println!("DataOut");
-                }
-                InfoType::Text => {
-                    println!("Text");
-                }
-                InfoType::HeaderOut => {
-                    println!("HeaderOut");
-                }
-                InfoType::SslDataOut => {
-                    println!("SslDataOut");
-                }
-                _ => println!("something else"),
-            }
-
-            println!("{:?}", String::from_utf8_lossy(data));
-        }).unwrap();
-        //a.verbose(true).unwrap();
-        //a.show_header(true).unwrap();
-
-        self.session
+    result(req).and_then(move |a| {
+        session
             .perform(a)
             .map_err(|x| Error::TokioCurl(x))
-            .map(move |_| {
-                let response = result.lock().unwrap();
-                String::from(str::from_utf8(&response).unwrap())
+            .map(|_| response_vec)
+            .and_then(move |response_vec| {
+                if let Ok(ref vec) = response_vec.lock() {
+                    if let Ok(s) = str::from_utf8(vec) {
+                        return Ok(String::from(s));
+                    }
+                }
+
+                return Err(Error::Unknown);
             })
             .and_then(move |x| {
                 debug!("Got a result from telegram: {}", x);
@@ -186,24 +188,67 @@ impl Bot {
                     {
                         if ok {
                             if let Some(result) = res {
-                                let answer = serde_json::to_string(result).unwrap();
+                                return serde_json::to_string(result).map_err(|e| {
+                                    error!("Error: {}", e);
 
-                                return Ok(answer);
+                                    Error::Unknown
+                                });
                             }
                         }
 
                         match req.get("description").and_then(Value::as_str) {
-                            Some(err) => Err(Error::Telegram(err.into())),
-                            None => Err(Error::Telegram("Unknown".into())),
+                            Some(err) => return Err(Error::Telegram(err.into())),
+                            None => return Err(Error::Telegram("Unknown".into())),
                         }
-                    } else {
-                        return Err(Error::JSON);
                     }
-                } else {
-                    return Err(Error::JSON);
                 }
+
+                return Err(Error::JSON);
             })
-    }
+    })
+}
+
+fn prepare_fetch(
+    mut a: Easy,
+    response_vec: Arc<Mutex<Vec<u8>>>,
+    key: &str,
+    func: &str,
+) -> Result<Easy, Error> {
+    let url = &format!("https://api.telegram.org/bot{}/{}", key, func);
+
+    a.url(url)?;
+
+    let r2 = response_vec.clone();
+
+    a.write_function(move |data| match r2.lock() {
+        Ok(ref mut vec) => {
+            vec.extend_from_slice(data);
+            Ok(data.len())
+        }
+        Err(_) => Ok(0),
+    })?;
+
+    a.debug_function(|info, data| {
+        match info {
+            InfoType::DataOut => {
+                println!("DataOut");
+            }
+            InfoType::Text => {
+                println!("Text");
+            }
+            InfoType::HeaderOut => {
+                println!("HeaderOut");
+            }
+            InfoType::SslDataOut => {
+                println!("SslDataOut");
+            }
+            _ => println!("something else"),
+        }
+
+        println!("{:?}", String::from_utf8_lossy(data));
+    })?;
+
+    Ok(a)
 }
 
 impl RcBot {
@@ -248,10 +293,11 @@ impl RcBot {
     ) -> impl Stream<Item = (RcBot, objects::Update), Error = Error> + 'a {
         use functions::*;
 
-        Interval::new(
-            Duration::from_millis(self.inner.update_interval.get()),
-            &self.inner.handle,
-        ).unwrap()
+        let duration = Duration::from_millis(self.inner.update_interval.get());
+        Interval::new(duration, &self.inner.handle)
+            .into_future()
+            .into_stream()
+            .flatten()
             .map_err(|_| Error::Unknown)
             .and_then(move |_| {
                 self.get_updates().offset(self.inner.last_id.get()).send()
@@ -291,9 +337,12 @@ impl RcBot {
 
                 if let Some(cmd) = forward {
                     if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(&cmd) {
-                        sender
-                            .unbounded_send((self.clone(), val.message.unwrap()))
-                            .unwrap();
+                        if let Some(msg) = val.message {
+                            match sender.unbounded_send((self.clone(), msg)) {
+                                Ok(_) => (),
+                                Err(e) => error!("Error: {}", e),
+                            }
+                        }
                     }
                     return None;
                 } else {
