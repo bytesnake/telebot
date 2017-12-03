@@ -258,11 +258,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                         })
                         .or_else(move |(tmp,_)| {
                             result(serde_json::to_string(&tmp.inner))
-                                .map_err(|e| {
-                                    error!("Error: {}", e);
-
-                                    Error::Unknown
-                                })
+                                .map_err(|e| e.into())
                                 .and_then(move |msg| {
                                     tmp.bot.fetch_json(#function, msg)
                                 })
@@ -270,14 +266,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                         .and_then(move |answer| {
                             let bot = RcBot { inner: cloned_bot }; 
 
-                            match serde_json::from_str::<objects::#answer>(&answer) {
-                                Ok(json) => Ok((bot, json)),
-                                Err(e) => {
-                                    error!("Error: {}", e);
-
-                                    Err(Error::Unknown)
-                                }
-                            }
+                            Ok(serde_json::from_str::<objects::#answer>(&answer).map(|json| (bot, json))?)
                         })
                 }
                
@@ -301,21 +290,19 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                     self
                 }
                 
-                pub fn try_file<S>(mut self, val: S) -> Result<Self, S::Error> where S: TryInto<file::File> {
+                pub fn file<S>(mut self, val: S) -> Self where S: TryInto<file::File> {
                     match val.try_into() {
                         Ok(val) => {
                             self.file = Some(val);
 
-                            Ok(self)
+                            self
                         },
-                        Err(e) => Err(e),
+                        Err(_) => {
+                            self.file = None;
+
+                            self
+                        },
                     }
-                }
-
-                pub fn file<S>(mut self, val: S) -> Self where S: Into<file::File> {
-                    self.file = Some(val.into());
-
-                    self
                 }
             }
         }
@@ -336,27 +323,18 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                 pub fn send<'a>(self) -> impl Future<Item=(RcBot, objects::#answer), Error=Error> + 'a{
                     use futures::future::result;
                     result(serde_json::to_string(&self.inner))
-                        .map_err(|e| {
-                            error!("Error: {}", e);
-
-                            Error::Unknown
-                        })
+                        .map_err(|e| e.into())
                         .and_then(move |msg| {
-                            Box::new(self.bot.fetch_json(#function, msg)
-                                     .and_then(move |x| {
-                                        let bot = RcBot {
-                                            inner: self.bot.clone(),
-                                        };
+                            let obj = self.bot.fetch_json(#function, msg)
+                                .and_then(move |x| {
+                                    let bot = RcBot {
+                                        inner: self.bot.clone(),
+                                    };
 
-                                        match serde_json::from_str::<objects::#answer>(&x) {
-                                            Ok(json) => Ok((bot, json)),
-                                            Err(e) => {
-                                                error!("Error: {}", e);
+                                    Ok(serde_json::from_str::<objects::#answer>(&x).map(|json| (bot, json))?)
+                                });
 
-                                                Err(Error::Unknown)
-                                            }
-                                        }
-                                     }))
+                            Box::new(obj)
                         })
                 }
                 

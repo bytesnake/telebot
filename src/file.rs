@@ -27,14 +27,16 @@ impl<'a> TryFrom<&'a str> for File {
 }
 
 /// Construct a Telegram file from an object which implements the Read trait
-impl<'a, S: Read + 'static> From<(&'a str, S)> for File {
-    fn from((path, source): (&'a str, S)) -> File
+impl<'a, S: Read + 'static> TryFrom<(&'a str, S)> for File {
+    type Error = io::Error;
+
+    fn try_from((path, source): (&'a str, S)) -> Result<Self, Self::Error>
     where
         S: Read + 'static,
     {
-        File {
+        Ok(File {
             name: path.into(),
             source: Box::new(source),
-        }
+        })
     }
 }

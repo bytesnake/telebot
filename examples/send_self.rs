@@ -19,8 +19,7 @@ fn main() {
 
     let handle = bot.new_cmd("/send_self").and_then(|(bot, msg)| {
         bot.document(msg.chat.id)
-            .try_file("examples/send_self.rs")
-            .unwrap()
+            .file("examples/send_self.rs")
             .send()
     });
 
