@@ -24,6 +24,8 @@ pub enum Error {
     // indicates a malformated reply, this should never happen unless the Telegram server has a
     // hard time
     JSON,
+    // indicates whether a file was supposed to be attached, but wasn't properly read
+    NoFile,
     // indicates an unknown error
     Unknown,
 }

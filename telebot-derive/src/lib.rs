@@ -219,7 +219,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
         pub struct #wrapper_name {
             bot: Rc<Bot>,
             inner: #name,
-            file: Option<file::File>
+            file: Option<Result<file::File, Error>>
         }
     };
 
@@ -239,6 +239,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
             impl #wrapper_name {
                 pub fn send<'a>(self) -> impl Future<Item=(RcBot, objects::#answer), Error=Error> + 'a{
                     use futures::future::result;
+                    use futures::IntoFuture;
                    
                     let cloned_bot = self.bot.clone();
 
@@ -246,7 +247,14 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                         .and_then(move |mut tmp| {
                             if let Ok(msg) = serde_json::to_value(&tmp.inner) {
                                 if let Some(file) = tmp.file.take() {
-                                    return Ok((tmp, msg, file));
+                                    match file {
+                                        Ok(file) => {
+                                            return Ok((tmp, msg, file));
+                                        }
+                                        Err(e) => {
+                                            return Err((tmp, e));
+                                        }
+                                    }
                                 }
                             }
 
@@ -256,17 +264,32 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                             tmp.bot.fetch_formdata(#function, msg, file.source, #bot_function_name, &file.name)
                                 .map_err(|err| (tmp, err))
                         })
-                        .or_else(move |(tmp,_)| {
-                            result(serde_json::to_string(&tmp.inner))
-                                .map_err(|e| e.into())
+                        .or_else(move |(tmp, err)| {
+                            let bot = tmp.bot.clone();
+
+                            Ok(err)
+                                .and_then(move |e| {
+                                    match e {
+                                        e @ Error::NoFile => Err(e),
+                                        e => Ok(e),
+                                    }
+                                })
+                                .and_then(move |_| {
+                                    serde_json::to_string(&tmp.inner)
+                                        .map_err(|e| e.into())
+                                })
+                                .into_future()
                                 .and_then(move |msg| {
-                                    tmp.bot.fetch_json(#function, msg)
+                                    bot.fetch_json(#function, msg)
                                 })
                         })
                         .and_then(move |answer| {
                             let bot = RcBot { inner: cloned_bot }; 
 
-                            Ok(serde_json::from_str::<objects::#answer>(&answer).map(|json| (bot, json))?)
+                            let json = serde_json::from_str::<objects::#answer>(&answer)
+                                .map(|json| (bot, json))?;
+
+                            Ok(json)
                         })
                 }
                
@@ -293,12 +316,12 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                 pub fn file<S>(mut self, val: S) -> Self where S: TryInto<file::File> {
                     match val.try_into() {
                         Ok(val) => {
-                            self.file = Some(val);
+                            self.file = Some(Ok(val));
 
                             self
                         },
                         Err(_) => {
-                            self.file = None;
+                            self.file = Some(Err(Error::NoFile));
 
                             self
                         },
