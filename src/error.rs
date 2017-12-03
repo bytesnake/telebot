@@ -1,4 +1,7 @@
 use std::io;
+use std::str;
+use std::sync::PoisonError;
+use serde_json::Error as JsonError;
 use curl::Error as CurlError;
 use curl::FormError;
 use tokio_curl::PerformError;
@@ -23,6 +26,24 @@ pub enum Error {
     JSON,
     // indicates an unknown error
     Unknown,
+}
+
+impl From<JsonError> for Error {
+    fn from(_: JsonError) -> Self {
+        Error::JSON
+    }
+}
+
+impl<T> From<PoisonError<T>> for Error {
+    fn from(_: PoisonError<T>) -> Self {
+        Error::Unknown
+    }
+}
+
+impl From<str::Utf8Error> for Error {
+    fn from(_: str::Utf8Error) -> Self {
+        Error::UTF8Decode
+    }
 }
 
 impl From<PerformError> for Error {

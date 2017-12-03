@@ -18,7 +18,6 @@ use tokio_core::reactor::{Handle, Core, Interval};
 use serde_json;
 use serde_json::value::Value;
 use futures::{Future, IntoFuture, Stream, stream};
-use futures::future::result;
 use futures::sync::mpsc;
 use futures::sync::mpsc::UnboundedSender;
 
@@ -71,10 +70,8 @@ impl Bot {
         debug!("Send JSON: {}", msg);
 
         let json = self.build_json(msg);
-        let session = self.session.clone();
-        let key = self.key.clone();
 
-        result(json).and_then(move |a| _fetch(session, key, func, a))
+        self._fetch(func, json)
     }
 
     fn build_json(&self, msg: String) -> Result<Easy, Error> {
@@ -108,10 +105,8 @@ impl Bot {
         debug!("Send formdata: {}", msg.to_string());
 
         let formdata = self.build_formdata(msg, file, kind, file_name);
-        let session = self.session.clone();
-        let key = self.key.clone();
 
-        result(formdata).and_then(move |a| _fetch(session, key, func, a))
+        self._fetch(func, formdata)
     }
 
     fn build_formdata<T>(
@@ -149,106 +144,91 @@ impl Bot {
 
         Ok(a)
     }
-}
 
-/// calls cURL and parses the result for an error
-pub fn _fetch(
-    session: Session,
-    key: String,
-    func: &str,
-    a: Easy,
-) -> impl Future<Item = String, Error = Error> {
-    let response_vec = Arc::new(Mutex::new(Vec::new()));
+    /// calls cURL and parses the result for an error
+    pub fn _fetch(
+        &self,
+        func: &str,
+        a: Result<Easy, Error>,
+    ) -> impl Future<Item = String, Error = Error> {
+        let response_vec = Arc::new(Mutex::new(Vec::new()));
+        let r1 = Arc::clone(&response_vec);
 
-    let req = prepare_fetch(a, Arc::clone(&response_vec), &key, func);
+        let session = self.session.clone();
 
-    result(req).and_then(move |a| {
-        session
-            .perform(a)
-            .map_err(|x| Error::TokioCurl(x))
-            .map(|_| response_vec)
-            .and_then(move |response_vec| {
-                if let Ok(ref vec) = response_vec.lock() {
-                    if let Ok(s) = str::from_utf8(vec) {
-                        return Ok(String::from(s));
-                    }
-                }
+        a.and_then(|a| self.prepare_fetch(a, r1, func))
+            .into_future()
+            .and_then(move |a| {
+                session
+                    .perform(a)
+                    .map_err(|x| Error::TokioCurl(x))
+                    .map(|_| response_vec)
+                    .and_then(move |response_vec| {
+                        let ref vec = response_vec.lock()?;
+                        let s = str::from_utf8(vec)?;
 
-                return Err(Error::Unknown);
-            })
-            .and_then(move |x| {
-                debug!("Got a result from telegram: {}", x);
-                // try to parse the result as a JSON and find the OK field.
-                // If the ok field is true, then the string in "result" will be returned
-                if let Ok(req) = serde_json::from_str::<Value>(&x) {
-                    if let (Some(ok), res) = (
-                        req.get("ok").and_then(Value::as_bool),
-                        req.get("result"),
-                    )
-                    {
+                        let x = String::from(s);
+                        debug!("Got a result from telegram: {}", x);
+                        // try to parse the result as a JSON and find the OK field.
+                        // If the ok field is true, then the string in "result" will be returned
+                        let req = serde_json::from_str::<Value>(&x)?;
+
+                        let ok = req.get("ok").and_then(Value::as_bool).ok_or(Error::JSON)?;
+
                         if ok {
-                            if let Some(result) = res {
-                                return serde_json::to_string(result).map_err(|e| {
-                                    error!("Error: {}", e);
-
-                                    Error::Unknown
-                                });
+                            if let Some(result) = req.get("result") {
+                                return Ok(serde_json::to_string(result)?);
                             }
                         }
 
                         match req.get("description").and_then(Value::as_str) {
-                            Some(err) => return Err(Error::Telegram(err.into())),
-                            None => return Err(Error::Telegram("Unknown".into())),
+                            Some(err) => Err(Error::Telegram(err.into())),
+                            None => Err(Error::Telegram("Unknown".into())),
                         }
-                    }
-                }
-
-                return Err(Error::JSON);
+                    })
             })
-    })
-}
+    }
 
-fn prepare_fetch(
-    mut a: Easy,
-    response_vec: Arc<Mutex<Vec<u8>>>,
-    key: &str,
-    func: &str,
-) -> Result<Easy, Error> {
-    let url = &format!("https://api.telegram.org/bot{}/{}", key, func);
+    fn prepare_fetch(
+        &self,
+        mut a: Easy,
+        response_vec: Arc<Mutex<Vec<u8>>>,
+        func: &str,
+    ) -> Result<Easy, Error> {
+        let url = &format!("https://api.telegram.org/bot{}/{}", self.key, func);
 
-    a.url(url)?;
+        a.url(url)?;
 
-    let r2 = response_vec.clone();
-
-    a.write_function(move |data| match r2.lock() {
-        Ok(ref mut vec) => {
-            vec.extend_from_slice(data);
-            Ok(data.len())
-        }
-        Err(_) => Ok(0),
-    })?;
-
-    a.debug_function(|info, data| {
-        match info {
-            InfoType::DataOut => {
-                println!("DataOut");
+        a.write_function(move |data| match response_vec.lock() {
+            Ok(ref mut vec) => {
+                vec.extend_from_slice(data);
+                Ok(data.len())
             }
-            InfoType::Text => {
-                println!("Text");
-            }
-            InfoType::HeaderOut => {
-                println!("HeaderOut");
-            }
-            InfoType::SslDataOut => {
-                println!("SslDataOut");
-            }
-            _ => println!("something else"),
-        }
+            Err(_) => Ok(0),
+        })?;
 
-        println!("{:?}", String::from_utf8_lossy(data));
-    })?;
+        a.debug_function(|info, data| {
+            match info {
+                InfoType::DataOut => {
+                    println!("DataOut");
+                }
+                InfoType::Text => {
+                    println!("Text");
+                }
+                InfoType::HeaderOut => {
+                    println!("HeaderOut");
+                }
+                InfoType::SslDataOut => {
+                    println!("SslDataOut");
+                }
+                _ => println!("something else"),
+            }
 
-    Ok(a)
+            println!("{:?}", String::from_utf8_lossy(data));
+        })?;
+
+        Ok(a)
+    }
 }
 
 impl RcBot {
