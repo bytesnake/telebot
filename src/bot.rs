@@ -173,28 +173,28 @@ impl Bot {
                     .perform(a)
                     .map_err(Error::TokioCurl)
                     .map(|_| response_vec)
-                    .and_then(move |response_vec| {
-                        let vec = &(response_vec.lock()?);
-                        let s = str::from_utf8(vec)?;
+            })
+            .and_then(move |response_vec| {
+                let vec = &(response_vec.lock()?);
+                let s = str::from_utf8(vec)?;
 
-                        debug!("Got a result from telegram: {}", s);
-                        // try to parse the result as a JSON and find the OK field.
-                        // If the ok field is true, then the string in "result" will be returned
-                        let req = serde_json::from_str::<Value>(&s)?;
+                debug!("Got a result from telegram: {}", s);
+                // try to parse the result as a JSON and find the OK field.
+                // If the ok field is true, then the string in "result" will be returned
+                let req = serde_json::from_str::<Value>(&s)?;
 
-                        let ok = req.get("ok").and_then(Value::as_bool).ok_or(Error::JSON)?;
+                let ok = req.get("ok").and_then(Value::as_bool).ok_or(Error::JSON)?;
 
-                        if ok {
-                            if let Some(result) = req.get("result") {
-                                return Ok(serde_json::to_string(result)?);
-                            }
-                        }
+                if ok {
+                    if let Some(result) = req.get("result") {
+                        return Ok(serde_json::to_string(result)?);
+                    }
+                }
 
-                        match req.get("description").and_then(Value::as_str) {
-                            Some(err) => Err(Error::Telegram(err.into())),
-                            None => Err(Error::Telegram("Unknown".into())),
-                        }
-                    })
+                match req.get("description").and_then(Value::as_str) {
+                    Some(err) => Err(Error::Telegram(err.into())),
+                    None => Err(Error::Telegram("Unknown".into())),
+                }
             })
     }
 
