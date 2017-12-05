@@ -172,11 +172,10 @@ impl Bot {
                         let vec = &(response_vec.lock()?);
                         let s = str::from_utf8(vec)?;
 
-                        let x = String::from(s);
-                        debug!("Got a result from telegram: {}", x);
+                        debug!("Got a result from telegram: {}", s);
                         // try to parse the result as a JSON and find the OK field.
                         // If the ok field is true, then the string in "result" will be returned
-                        let req = serde_json::from_str::<Value>(&x)?;
+                        let req = serde_json::from_str::<Value>(&s)?;
 
                         let ok = req.get("ok").and_then(Value::as_bool).ok_or(Error::JSON)?;
 
@@ -323,10 +322,7 @@ impl RcBot {
                 if let Some(cmd) = forward {
                     if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(&cmd) {
                         if let Some(msg) = val.message {
-                            match sender.unbounded_send((self.clone(), msg)) {
-                                Ok(_) => (),
-                                Err(e) => error!("Error: {}", e),
-                            }
+                            sender.unbounded_send((self.clone(), msg)).unwrap_or_else(|e| error!("Error: {}", e));
                         }
                     }
                     return None;
