@@ -1,3 +1,4 @@
+    #![feature(try_from)]
     #![feature(proc_macro, proc_macro_lib)]
     #![recursion_limit="150"]
 
@@ -51,7 +52,7 @@
             .filter(|f| f.0.as_ref() != "kind" && f.0.as_ref() != "id")
             .map(|f| syn::Ident::from(format!("_{}", f.0.as_ref())))
             .collect();
-        
+
         let field_optional: Vec<_> = fields.iter().filter(|f| is_option_ident(&f)).map(|f| f.0).collect();
         let field_optional2 = field_optional.clone();
 
@@ -70,7 +71,7 @@
                 _ => return syn::Ident::from("None")
             }
         }).collect();
-      
+
         let ty_compulsory: Vec<_> = fields.iter().map(|f| f.1).collect();
         let ty_compulsory2: Vec<_> = fields.iter().filter(|f| f.0.as_ref() != "kind" && f.0.as_ref() != "id").map(|f| f.1).collect();
         let ty_optional: Vec<_> = fields.iter().filter(|f| is_option_ident(&f)).map(|f| {
@@ -155,11 +156,11 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
         _ => panic!("#[derive(getters)] can only be used with braced structs"),
     };
 
-        
+
         /*for field in &fields {
         println!("{:?}", field.1);
     }*/
-    
+
     let name = &ast.ident;
     let is_option_ident = |ref f: &(&syn::Ident, &syn::Ty)| -> bool {
         match *f.1 {
@@ -175,7 +176,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
 
     let field_compulsory: Vec<_> = fields.iter().filter(|f| !is_option_ident(&f))
         .map(|f| syn::Ident::from(format!("_{}", f.0.as_ref()))).collect();
-    
+
     let field_optional: Vec<_> = fields.iter().filter(|f| is_option_ident(&f)).map(|f| f.0).collect();
     let field_optional2 = field_optional.clone();
 
@@ -192,7 +193,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
             _ => return syn::Ident::from("None")
         }
     }).collect();
-    
+
     let ty_compulsory: Vec<_> = fields.iter().map(|f| f.1).collect();
     let ty_compulsory2 = ty_compulsory.clone();
     let ty_optional: Vec<_> = fields.iter().filter(|f| is_option_ident(&f)).map(|f| {
@@ -212,13 +213,13 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
     let trait_name = syn::Ident::from(format!("Function{}",  name.as_ref()));
     let wrapper_name = syn::Ident::from(format!("Wrapper{}", name.as_ref()));
     let bot_function_name = syn::Lit::Str(format!("{}", bot_function), syn::StrStyle::Cooked);
-    
+
     let tokens = quote! {
         #[allow(dead_code)]
         pub struct #wrapper_name {
             bot: Rc<Bot>,
             inner: #name,
-            file: Option<file::File>
+            file: Option<Result<file::File, Error>>
         }
     };
 
@@ -238,27 +239,58 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
             impl #wrapper_name {
                 pub fn send<'a>(self) -> impl Future<Item=(RcBot, objects::#answer), Error=Error> + 'a{
                     use futures::future::result;
+                    use futures::IntoFuture;
                    
                     let cloned_bot = self.bot.clone();
 
                     result::<#wrapper_name, (#wrapper_name, Error)>(Ok(self))
-                        .and_then(|tmp| {
-                            if tmp.file.is_some() {
-                                return Ok(tmp);
-                            } else {
-                                return Err((tmp, Error::Unknown));
+                        .and_then(move |mut tmp| {
+                            if let Ok(msg) = serde_json::to_value(&tmp.inner) {
+                                if let Some(file) = tmp.file.take() {
+                                    match file {
+                                        Ok(file) => {
+                                            return Ok((tmp, msg, file));
+                                        }
+                                        Err(e) => {
+                                            return Err((tmp, e));
+                                        }
+                                    }
+                                }
                             }
+
+                            return Err((tmp, Error::Unknown));
                         })
-                        .and_then(|mut tmp| {
-                            let msg = serde_json::to_value(&tmp.inner).unwrap();
-                            let file = tmp.file.take().unwrap();
-                            tmp.bot.fetch_formdata(#function, msg, file.source, #bot_function_name, &file.name).map_err(|err| (tmp, err))
+                        .and_then(move |(tmp, msg, file)| {
+                            tmp.bot.fetch_formdata(#function, &msg, file.source, #bot_function_name, &file.name)
+                                .map_err(|err| (tmp, err))
                         })
-                        .or_else(move |(tmp,_)| {
-                            let msg = serde_json::to_string(&tmp.inner).unwrap();
-                            tmp.bot.fetch_json(#function, &msg)
+                        .or_else(move |(tmp, err)| {
+                            let bot = tmp.bot.clone();
+
+                            Ok(err)
+                                .and_then(move |e| {
+                                    match e {
+                                        e @ Error::NoFile => Err(e),
+                                        e => Ok(e),
+                                    }
+                                })
+                                .and_then(move |_| {
+                                    serde_json::to_string(&tmp.inner)
+                                        .map_err(|e| e.into())
+                                })
+                                .into_future()
+                                .and_then(move |msg| {
+                                    bot.fetch_json(#function, &msg)
+                                })
                         })
-                        .map(move |answer| (RcBot { inner: cloned_bot }, serde_json::from_str::<objects::#answer>(&answer).unwrap()))
+                        .and_then(move |answer| {
+                            let bot = RcBot { inner: cloned_bot }; 
+
+                            let json = serde_json::from_str::<objects::#answer>(&answer)
+                                .map(|json| (bot, json))?;
+
+                            Ok(json)
+                        })
                 }
                
                 #(
@@ -281,10 +313,19 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                     self
                 }
                 
-                pub fn file<S>(mut self, val: S) -> Self where S: Into<file::File> {
-                    self.file = Some(val.into());
-                
-                    self
+                pub fn file<S>(mut self, val: S) -> Self where S: TryInto<file::File> {
+                    match val.try_into() {
+                        Ok(val) => {
+                            self.file = Some(Ok(val));
+
+                            self
+                        },
+                        Err(_) => {
+                            self.file = Some(Err(Error::NoFile));
+
+                            self
+                        },
+                    }
                 }
             }
         }
@@ -303,9 +344,21 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
             }
             impl #wrapper_name {
                 pub fn send<'a>(self) -> impl Future<Item=(RcBot, objects::#answer), Error=Error> + 'a{
-                    let msg = serde_json::to_string(&self.inner).unwrap();
-                    Box::new(self.bot.fetch_json(#function, &msg)
-                        .map(move |x| (RcBot { inner: self.bot.clone() }, serde_json::from_str::<objects::#answer>(&x).unwrap())))
+                    use futures::future::result;
+                    result(serde_json::to_string(&self.inner))
+                        .map_err(|e| e.into())
+                        .and_then(move |msg| {
+                            let obj = self.bot.fetch_json(#function, &msg)
+                                .and_then(move |x| {
+                                    let bot = RcBot {
+                                        inner: self.bot.clone(),
+                                    };
+
+                                    Ok(serde_json::from_str::<objects::#answer>(&x).map(|json| (bot, json))?)
+                                });
+
+                            Box::new(obj)
+                        })
                 }
                 
                 #(

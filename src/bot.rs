@@ -62,89 +62,156 @@ impl Bot {
     /// Creates a new request and adds a JSON message to it. The returned Future contains a the
     /// reply as a string.  This method should be used if no file is added because a JSON msg is
     /// always compacter than a formdata one.
-    pub fn fetch_json<'a>(
+    pub fn fetch_json(
         &self,
-        func: &str,
+        func: &'static str,
         msg: &str,
-    ) -> impl Future<Item = String, Error = Error> + 'a {
+    ) -> impl Future<Item = String, Error = Error> {
         debug!("Send JSON: {}", msg);
 
+        let json = self.build_json(msg);
+
+        self._fetch(func, json)
+    }
+
+    fn build_json(&self, msg: &str) -> Result<Easy, Error> {
         let mut header = List::new();
-        header.append("Content-Type: application/json").unwrap();
+
+        header.append("Content-Type: application/json")?;
 
         let mut a = Easy::new();
-        a.http_headers(header).unwrap();
-        a.post_fields_copy(msg.as_bytes()).unwrap();
-        a.post(true).unwrap();
 
-        self._fetch(func, a)
+        a.http_headers(header)?;
+        a.post_fields_copy(msg.as_bytes())?;
+        a.post(true)?;
+
+        Ok(a)
     }
+
 
     /// Creates a new request with some byte content (e.g. a file). The method properties have to be
     /// in the formdata setup and cannot be sent as JSON.
-    pub fn fetch_formdata<'a, T>(
+    pub fn fetch_formdata<T>(
         &self,
-        func: &str,
-        msg: Value,
-        mut file: T,
+        func: &'static str,
+        msg: &Value,
+        file: T,
         kind: &str,
         file_name: &str,
-    ) -> impl Future<Item = String, Error = Error> + 'a
+    ) -> impl Future<Item = String, Error = Error>
     where
         T: io::Read,
     {
         debug!("Send formdata: {}", msg.to_string());
+
+        let formdata = self.build_formdata(msg, file, kind, file_name);
+
+        self._fetch(func, formdata)
+    }
+
+    fn build_formdata<T>(
+        &self,
+        msg: &Value,
+        mut file: T,
+        kind: &str,
+        file_name: &str,
+    ) -> Result<Easy, Error>
+    where
+        T: io::Read,
+    {
         let mut content = Vec::new();
 
-        let mut a = Easy::new();
+        file.read_to_end(&mut content)?;
+
+        let msg = msg.as_object().ok_or(Error::Unknown)?;
+
         let mut form = Form::new();
 
-        // try to read the byte content to a vector
-        let _ = file.read_to_end(&mut content).unwrap();
-
         // add properties
-        for (key, val) in msg.as_object().unwrap().iter() {
-            form.part(key)
-                .contents(format!("{}", val).as_bytes())
-                .add()
-                .unwrap();
+        for (key, val) in msg.iter() {
+            let val = match val {
+                &Value::String(ref val) => format!("{}", val),
+                etc => format!("{}", etc),
+            };
+
+            form.part(key).contents(val.as_bytes()).add()?;
         }
 
-        // add the file
         form.part(kind)
             .buffer(file_name, content)
             .content_type("application/octet-stream")
-            .add()
-            .unwrap();
+            .add()?;
 
-        // create a http post request
-        a.post(true).unwrap();
-        a.httppost(form).unwrap();
+        let mut a = Easy::new();
 
-        self._fetch(func, a)
+        a.post(true)?;
+        a.httppost(form)?;
+
+        Ok(a)
     }
 
     /// calls cURL and parses the result for an error
-    pub fn _fetch<'a>(
+    pub fn _fetch(
         &self,
         func: &str,
+        a: Result<Easy, Error>,
+    ) -> impl Future<Item = String, Error = Error> {
+        let response_vec = Arc::new(Mutex::new(Vec::new()));
+        let r1 = Arc::clone(&response_vec);
+
+        let session = self.session.clone();
+
+        a.and_then(|a| self.prepare_fetch(a, r1, func))
+            .into_future()
+            .and_then(move |a| {
+                session
+                    .perform(a)
+                    .map_err(Error::TokioCurl)
+                    .map(|_| response_vec)
+                    .and_then(move |response_vec| {
+                        let vec = &(response_vec.lock()?);
+                        let s = str::from_utf8(vec)?;
+
+                        let x = String::from(s);
+                        debug!("Got a result from telegram: {}", x);
+                        // try to parse the result as a JSON and find the OK field.
+                        // If the ok field is true, then the string in "result" will be returned
+                        let req = serde_json::from_str::<Value>(&x)?;
+
+                        let ok = req.get("ok").and_then(Value::as_bool).ok_or(Error::JSON)?;
+
+                        if ok {
+                            if let Some(result) = req.get("result") {
+                                return Ok(serde_json::to_string(result)?);
+                            }
+                        }
+
+                        match req.get("description").and_then(Value::as_str) {
+                            Some(err) => Err(Error::Telegram(err.into())),
+                            None => Err(Error::Telegram("Unknown".into())),
+                        }
+                    })
+            })
+    }
+
+    fn prepare_fetch(
+        &self,
         mut a: Easy,
-    ) -> impl Future<Item = String, Error = Error> + 'a {
-        let result = Arc::new(Mutex::new(Vec::new()));
+        response_vec: Arc<Mutex<Vec<u8>>>,
+        func: &str,
+    ) -> Result<Easy, Error> {
+        let url = &format!("https://api.telegram.org/bot{}/{}", self.key, func);
 
-        a.url(&format!(
-            "https://api.telegram.org/bot{}/{}",
-            self.key,
-            func
-        )).unwrap();
+        a.url(url)?;
 
-        let r2 = result.clone();
-        a.write_function(move |data| {
-            r2.lock().unwrap().extend_from_slice(data);
-            Ok(data.len())
-        }).unwrap();
+        a.write_function(move |data| match response_vec.lock() {
+            Ok(ref mut vec) => {
+                vec.extend_from_slice(data);
+                Ok(data.len())
+            }
+            Err(_) => Ok(0),
+        })?;
 
-        // print debug information
         a.debug_function(|info, data| {
             match info {
                 InfoType::DataOut => {
@@ -163,46 +230,9 @@ impl Bot {
             }
 
             println!("{:?}", String::from_utf8_lossy(data));
-        }).unwrap();
-        //a.verbose(true).unwrap();
-        //a.show_header(true).unwrap();
+        })?;
 
-        self.session
-            .perform(a)
-            .map_err(|x| Error::TokioCurl(x))
-            .map(move |_| {
-                let response = result.lock().unwrap();
-                String::from(str::from_utf8(&response).unwrap())
-            })
-            .and_then(move |x| {
-                debug!("Got a result from telegram: {}", x);
-                // try to parse the result as a JSON and find the OK field.
-                // If the ok field is true, then the string in "result" will be returned
-                if let Ok(req) = serde_json::from_str::<Value>(&x) {
-                    if let (Some(ok), res) = (
-                        req.get("ok").and_then(Value::as_bool),
-                        req.get("result"),
-                    )
-                    {
-                        if ok {
-                            if let Some(result) = res {
-                                let answer = serde_json::to_string(result).unwrap();
-
-                                return Ok(answer);
-                            }
-                        }
-
-                        match req.get("description").and_then(Value::as_str) {
-                            Some(err) => Err(Error::Telegram(err.into())),
-                            None => Err(Error::Telegram("Unknown".into())),
-                        }
-                    } else {
-                        return Err(Error::JSON);
-                    }
-                } else {
-                    return Err(Error::JSON);
-                }
-            })
+        Ok(a)
     }
 }
 
@@ -248,10 +278,11 @@ impl RcBot {
     ) -> impl Stream<Item = (RcBot, objects::Update), Error = Error> + 'a {
         use functions::*;
 
-        Interval::new(
-            Duration::from_millis(self.inner.update_interval.get()),
-            &self.inner.handle,
-        ).unwrap()
+        let duration = Duration::from_millis(self.inner.update_interval.get());
+        Interval::new(duration, &self.inner.handle)
+            .into_future()
+            .into_stream()
+            .flatten()
             .map_err(|_| Error::Unknown)
             .and_then(move |_| {
                 self.get_updates().offset(self.inner.last_id.get()).send()
@@ -291,9 +322,12 @@ impl RcBot {
 
                 if let Some(cmd) = forward {
                     if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(&cmd) {
-                        sender
-                            .unbounded_send((self.clone(), val.message.unwrap()))
-                            .unwrap();
+                        if let Some(msg) = val.message {
+                            match sender.unbounded_send((self.clone(), msg)) {
+                                Ok(_) => (),
+                                Err(e) => error!("Error: {}", e),
+                            }
+                        }
                     }
                     return None;
                 } else {

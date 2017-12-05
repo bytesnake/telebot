@@ -10,6 +10,7 @@ use error::Error;
 use file;
 use futures::Future;
 use std::rc::Rc;
+use std::convert::TryInto;
 use erased_serde::Serialize;
 
 /// The strongly typed version of the parse_mode field which indicates the type of text
