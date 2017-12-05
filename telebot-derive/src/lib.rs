@@ -261,7 +261,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                             return Err((tmp, Error::Unknown));
                         })
                         .and_then(move |(tmp, msg, file)| {
-                            tmp.bot.fetch_formdata(#function, msg, file.source, #bot_function_name, &file.name)
+                            tmp.bot.fetch_formdata(#function, &msg, file.source, #bot_function_name, &file.name)
                                 .map_err(|err| (tmp, err))
                         })
                         .or_else(move |(tmp, err)| {
@@ -280,7 +280,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                                 })
                                 .into_future()
                                 .and_then(move |msg| {
-                                    bot.fetch_json(#function, msg)
+                                    bot.fetch_json(#function, &msg)
                                 })
                         })
                         .and_then(move |answer| {
@@ -348,7 +348,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                     result(serde_json::to_string(&self.inner))
                         .map_err(|e| e.into())
                         .and_then(move |msg| {
-                            let obj = self.bot.fetch_json(#function, msg)
+                            let obj = self.bot.fetch_json(#function, &msg)
                                 .and_then(move |x| {
                                     let bot = RcBot {
                                         inner: self.bot.clone(),

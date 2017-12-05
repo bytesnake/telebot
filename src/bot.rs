@@ -65,7 +65,7 @@ impl Bot {
     pub fn fetch_json(
         &self,
         func: &'static str,
-        msg: String,
+        msg: &str,
     ) -> impl Future<Item = String, Error = Error> {
         debug!("Send JSON: {}", msg);
 
@@ -74,7 +74,7 @@ impl Bot {
         self._fetch(func, json)
     }
 
-    fn build_json(&self, msg: String) -> Result<Easy, Error> {
+    fn build_json(&self, msg: &str) -> Result<Easy, Error> {
         let mut header = List::new();
 
         header.append("Content-Type: application/json")?;
@@ -94,7 +94,7 @@ impl Bot {
     pub fn fetch_formdata<T>(
         &self,
         func: &'static str,
-        msg: Value,
+        msg: &Value,
         file: T,
         kind: &str,
         file_name: &str,
@@ -111,7 +111,7 @@ impl Bot {
 
     fn build_formdata<T>(
         &self,
-        msg: Value,
+        msg: &Value,
         mut file: T,
         kind: &str,
         file_name: &str,
@@ -166,10 +166,10 @@ impl Bot {
             .and_then(move |a| {
                 session
                     .perform(a)
-                    .map_err(|x| Error::TokioCurl(x))
+                    .map_err(Error::TokioCurl)
                     .map(|_| response_vec)
                     .and_then(move |response_vec| {
-                        let ref vec = response_vec.lock()?;
+                        let vec = &(response_vec.lock()?);
                         let s = str::from_utf8(vec)?;
 
                         let x = String::from(s);
