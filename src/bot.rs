@@ -74,6 +74,8 @@ impl Bot {
         self._fetch(func, json)
     }
 
+    /// Builds the CURL header for a JSON request. The JSON is already converted to a str and is
+    /// appended to the POST header.
     fn build_json(&self, msg: &str) -> Result<Easy, Error> {
         let mut header = List::new();
 
@@ -109,6 +111,8 @@ impl Bot {
         self._fetch(func, formdata)
     }
 
+    /// Builds the CURL header for a formdata request. The file content is read and then append to
+    /// the formdata. Each key-value pair has a own line.
     fn build_formdata<T>(
         &self,
         msg: &Value,
@@ -150,7 +154,8 @@ impl Bot {
         Ok(a)
     }
 
-    /// calls cURL and parses the result for an error
+    /// Calls the Telegram API for the function and awaits the result. The result is then converted
+    /// to a String and returned in a Future.
     pub fn _fetch(
         &self,
         func: &str,
@@ -193,6 +198,7 @@ impl Bot {
             })
     }
 
+    /// Configures cURL to call to the right address and write the response to a vector.
     fn prepare_fetch(
         &self,
         mut a: Easy,
