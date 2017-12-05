@@ -129,7 +129,12 @@ impl Bot {
 
         // add properties
         for (key, val) in msg.iter() {
-            form.part(key).contents(format!("{}", val).as_bytes()).add()?;
+            let val = match val {
+                &Value::String(ref val) => format!("{}", val),
+                etc => format!("{}", etc),
+            };
+
+            form.part(key).contents(val.as_bytes()).add()?;
         }
 
         form.part(kind)
