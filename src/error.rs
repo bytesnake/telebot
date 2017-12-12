@@ -1,6 +1,8 @@
 use std::io;
+use std::fmt;
 use std::str;
 use std::sync::PoisonError;
+use std::error::Error as StdError;
 use serde_json::Error as JsonError;
 use curl::Error as CurlError;
 use curl::FormError;
@@ -28,6 +30,45 @@ pub enum Error {
     NoFile,
     // indicates an unknown error
     Unknown,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.description())?;
+
+        if let &Error::Telegram(ref message) = self {
+            write!(f, ": {}", message)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl StdError for Error {
+    fn description(&self) -> &str {
+        match self {
+            &Error::UTF8Decode => "reply could not be decoded",
+            &Error::Telegram(_) => "telegram returned error",
+            &Error::TokioCurl(_) => "tokio-curl error",
+            &Error::Curl(_) => "curl error",
+            &Error::Form(_) => "curl form error",
+            &Error::IO(_) => "error reading or writing data",
+            &Error::JSON => "malformed reply",
+            &Error::NoFile => "error reading attached file",
+            &Error::Unknown => "unknown error",
+        }
+    }
+
+    fn cause(&self) -> Option<&StdError> {
+        match self {
+            &Error::UTF8Decode | &Error::JSON | &Error::NoFile | &Error::Unknown => None,
+            &Error::Telegram(_) => None,
+            &Error::TokioCurl(ref e) => Some(e),
+            &Error::Curl(ref e) => Some(e),
+            &Error::Form(ref e) => Some(e),
+            &Error::IO(ref e) => Some(e),
+        }
+    }
 }
 
 impl From<JsonError> for Error {
