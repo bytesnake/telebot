@@ -41,6 +41,7 @@ pub struct Bot {
     pub handle: Handle,
     pub last_id: Cell<u32>,
     pub update_interval: Cell<u64>,
+    pub timeout: Cell<u64>,
     pub handlers: RefCell<HashMap<String, UnboundedSender<(RcBot, objects::Message)>>>,
     pub session: Session,
 }
@@ -54,6 +55,7 @@ impl Bot {
             key: key.into(),
             last_id: Cell::new(0),
             update_interval: Cell::new(1000),
+            timeout: Cell::new(30),
             handlers: RefCell::new(HashMap::new()),
             session: Session::new(handle.clone()),
         }
@@ -249,6 +251,13 @@ impl RcBot {
         self
     }
 
+    /// Sets the timeout interval for long polling
+    pub fn timeout(self, timeout: u64) -> RcBot {
+        self.inner.timeout.set(timeout);
+
+        self
+    }
+
     /// Creates a new command and returns a stream which will yield a message when the command is send
     pub fn new_cmd(
         &self,
@@ -290,7 +299,7 @@ impl RcBot {
             .flatten()
             .map_err(|_| Error::Unknown)
             .and_then(move |_| {
-                self.get_updates().offset(self.inner.last_id.get()).send()
+                self.get_updates().offset(self.inner.last_id.get()).timeout(self.inner.timeout.get() as i64).send()
             })
             .map(|(_, x)| {
                 stream::iter_result(x.0.into_iter().map(|x| Ok(x)).collect::<Vec<
