@@ -98,7 +98,7 @@ pub struct Update {
     pub edited_channel_post: Option<Message>,
     pub inline_query: Option<InlineQuery>,
     pub chosen_inline_result: Option<()>,
-    pub callback_query: Option<()>,
+    pub callback_query: Option<CallbackQuery>,
 }
 
 /// This object represents one size of a photo or a file / sticker thumbnail.
