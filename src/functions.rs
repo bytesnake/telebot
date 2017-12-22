@@ -5,12 +5,12 @@
 use bot::{Bot, RcBot};
 use serde_json;
 use objects;
-use objects::{Integer, NotImplemented};
+use objects::Integer;
 use error::Error;
 use file;
 use futures::Future;
 use std::rc::Rc;
-use std::convert::TryInto;
+use std::convert::{From, TryInto};
 use erased_serde::Serialize;
 
 /// The strongly typed version of the parse_mode field which indicates the type of text
@@ -42,6 +42,53 @@ pub enum Action {
     UploadAudio,
     UploadDocument,
     FindLocation,
+}
+
+/// Possible types of reply markups
+pub enum ReplyMarkup {
+    InlineKeyboardMarkup(objects::InlineKeyboardMarkup),
+    ReplyKeyboardMarkup(objects::ReplyKeyboardMarkup),
+    ReplyKeyboardRemove(objects::ReplyKeyboardRemove),
+    ForceReply(objects::ForceReply)
+}
+
+impl ::serde::Serialize for ReplyMarkup {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: ::serde::Serializer
+    {
+        use self::ReplyMarkup::*;
+
+        match self {
+            &InlineKeyboardMarkup(ref x) => x.serialize(serializer),
+            &ReplyKeyboardMarkup(ref x) => x.serialize(serializer),
+            &ReplyKeyboardRemove(ref x) => x.serialize(serializer),
+            &ForceReply(ref x) => x.serialize(serializer),
+        }
+    }
+}
+
+impl From<objects::InlineKeyboardMarkup> for ReplyMarkup {
+    fn from(f: objects::InlineKeyboardMarkup) -> Self {
+        ReplyMarkup::InlineKeyboardMarkup(f)
+    }
+}
+
+impl From<objects::ReplyKeyboardMarkup> for ReplyMarkup {
+    fn from(f: objects::ReplyKeyboardMarkup) -> Self {
+        ReplyMarkup::ReplyKeyboardMarkup(f)
+    }
+}
+
+impl From<objects::ReplyKeyboardRemove> for ReplyMarkup {
+    fn from(f: objects::ReplyKeyboardRemove) -> Self {
+        ReplyMarkup::ReplyKeyboardRemove(f)
+    }
+}
+
+impl From<objects::ForceReply> for ReplyMarkup {
+    fn from(f: objects::ForceReply) -> Self {
+        ReplyMarkup::ForceReply(f)
+    }
 }
 
 impl Into<String> for Action {
@@ -101,7 +148,7 @@ pub struct Message {
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_markup: Option<NotImplemented>,
+    reply_markup: Option<ReplyMarkup>,
 }
 
 /// Use this method to send photos. On success, the sent Message is returned.
@@ -121,7 +168,7 @@ pub struct SendPhoto {
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_markup: Option<NotImplemented>,
+    reply_markup: Option<ReplyMarkup>,
 }
 
 /// Use this method to send audio files, if you want Telegram clients to display them in the music
@@ -151,7 +198,7 @@ pub struct SendAudio {
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_markup: Option<NotImplemented>,
+    reply_markup: Option<ReplyMarkup>,
 }
 
 /// Use this method to send general files. On success, the sent Message is returned. Bots can
@@ -173,7 +220,7 @@ pub struct SendDocument {
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_markup: Option<NotImplemented>,
+    reply_markup: Option<ReplyMarkup>,
 }
 
 /// Use this method to send .webp stickers. On success, the sent Message is returned.
@@ -191,7 +238,7 @@ pub struct SendSticker {
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_markup: Option<NotImplemented>,
+    reply_markup: Option<ReplyMarkup>,
 }
 
 /// Use this method to send video files, Telegram clients support mp4 videos (other formats may be
@@ -219,7 +266,7 @@ pub struct SendVideo {
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_markup: Option<NotImplemented>,
+    reply_markup: Option<ReplyMarkup>,
 }
 
 /// Use this method to send audio files, if you want Telegram clients to display the file as a
@@ -245,7 +292,7 @@ pub struct SendVoice {
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_markup: Option<NotImplemented>,
+    reply_markup: Option<ReplyMarkup>,
 }
 
 /// Use this method to send point on the map. On success, the sent Message is returned.
@@ -262,7 +309,7 @@ pub struct SendLocation {
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_markup: Option<NotImplemented>,
+    reply_markup: Option<ReplyMarkup>,
 }
 
 /// Use this method to send information about a venue. On success, the sent Message is returned.
@@ -283,7 +330,7 @@ pub struct SendVenue {
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_markup: Option<NotImplemented>,
+    reply_markup: Option<ReplyMarkup>,
 }
 
 /// Use this method to send phone contacts. On success, the sent Message is returned.
@@ -301,7 +348,7 @@ pub struct SendContact {
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_markup: Option<NotImplemented>,
+    reply_markup: Option<ReplyMarkup>,
 }
 
 /// Use this method when you need to tell the user that something is happening on the bot's side.
