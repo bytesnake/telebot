@@ -210,7 +210,7 @@ pub struct File {
 /// details and examples).
 #[derive(Deserialize, Debug)]
 pub struct ReplyKeyboardMarkup {
-    pub keyboard: Vec<KeyboardButton>,
+    pub keyboard: Vec<Vec<KeyboardButton>>,
     pub resize_keyboard: Option<bool>,
     pub one_time_keyboard: Option<bool>,
     pub selective: Option<bool>,
