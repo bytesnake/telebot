@@ -3,18 +3,20 @@
 
 use objects;
 use error::Error;
+use file::File;
 
 use std::str;
-use std::io;
 use std::time::Duration;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::{RefCell, Cell};
-use std::sync::{Arc, Mutex};
 
-use curl::easy::{Easy, List, Form, InfoType};
-use tokio_curl::Session;
 use tokio_core::reactor::{Handle, Core, Interval};
+use hyper::{Client, Method, Request, Body};
+use hyper::client::{Config, FutureResponse, HttpConnector};
+use hyper::header::ContentType;
+use hyper_tls::HttpsConnector;
+use hyper_multipart::client::multipart;
 use serde_json;
 use serde_json::value::Value;
 use futures::{Future, IntoFuture, Stream, stream};
@@ -43,7 +45,6 @@ pub struct Bot {
     pub update_interval: Cell<u64>,
     pub timeout: Cell<u64>,
     pub handlers: RefCell<HashMap<String, UnboundedSender<(RcBot, objects::Message)>>>,
-    pub session: Session,
 }
 
 impl Bot {
@@ -57,7 +58,6 @@ impl Bot {
             update_interval: Cell::new(1000),
             timeout: Cell::new(30),
             handlers: RefCell::new(HashMap::new()),
-            session: Session::new(handle.clone()),
         }
     }
 
@@ -71,67 +71,79 @@ impl Bot {
     ) -> impl Future<Item = String, Error = Error> {
         debug!("Send JSON: {}", msg);
 
-        let json = self.build_json(msg);
+        let request = self.build_json(func, String::from(msg));
 
-        self._fetch(func, json)
+        request.into_future().and_then(|(client, request)| {
+            _fetch(client.request(request))
+        })
     }
 
-    /// Builds the CURL header for a JSON request. The JSON is already converted to a str and is
+    /// Builds the HTTP header for a JSON request. The JSON is already converted to a str and is
     /// appended to the POST header.
-    fn build_json(&self, msg: &str) -> Result<Easy, Error> {
-        let mut header = List::new();
+    fn build_json(
+        &self,
+        func: &'static str,
+        msg: String,
+    ) -> Result<(Client<HttpsConnector<HttpConnector>, Body>, Request<Body>), Error> {
+        let url = format!("https://api.telegram.org/bot{}/{}", self.key, func)
+            .parse()?;
 
-        header.append("Content-Type: application/json")?;
+        let client = Client::configure()
+            .connector(HttpsConnector::new(2, &self.handle)?)
+            .build(&self.handle);
 
-        let mut a = Easy::new();
+        let mut req = Request::new(Method::Post, url);
+        req.headers_mut().set(ContentType::json());
+        req.set_body(msg);
 
-        a.http_headers(header)?;
-        a.post_fields_copy(msg.as_bytes())?;
-        a.post(true)?;
-
-        Ok(a)
+        Ok((client, req))
     }
 
 
     /// Creates a new request with some byte content (e.g. a file). The method properties have to be
     /// in the formdata setup and cannot be sent as JSON.
-    pub fn fetch_formdata<T>(
+    pub fn fetch_formdata(
         &self,
         func: &'static str,
         msg: &Value,
-        file: T,
+        file: File,
         kind: &str,
-        file_name: &str,
-    ) -> impl Future<Item = String, Error = Error>
-    where
-        T: io::Read,
-    {
+    ) -> impl Future<Item = String, Error = Error> {
         debug!("Send formdata: {}", msg.to_string());
 
-        let formdata = self.build_formdata(msg, file, kind, file_name);
+        let request = self.build_formdata(func, msg, file, kind);
 
-        self._fetch(func, formdata)
+        request.into_future().and_then(|(client, request)| {
+            _fetch(client.request(request))
+        })
     }
 
-    /// Builds the CURL header for a formdata request. The file content is read and then append to
+    /// Builds the HTTP header for a formdata request. The file content is read and then append to
     /// the formdata. Each key-value pair has a own line.
-    fn build_formdata<T>(
+    fn build_formdata(
         &self,
+        func: &'static str,
         msg: &Value,
-        mut file: T,
+        file: File,
         kind: &str,
-        file_name: &str,
-    ) -> Result<Easy, Error>
-    where
-        T: io::Read,
-    {
-        let mut content = Vec::new();
+    ) -> Result<
+        (Client<HttpsConnector<HttpConnector>, multipart::Body>,
+         Request<multipart::Body>),
+        Error,
+    > {
+        let client: Client<HttpsConnector<_>, multipart::Body> = Config::default()
+            .body::<multipart::Body>()
+            .connector(HttpsConnector::new(4, &self.handle)?)
+            .keep_alive(true)
+            .build(&self.handle);
 
-        file.read_to_end(&mut content)?;
+        let url = format!("https://api.telegram.org/bot{}/{}", self.key, func)
+            .parse()?;
+
+        let mut req = Request::new(Method::Post, url);
+        let mut form = multipart::Form::default();
 
         let msg = msg.as_object().ok_or(Error::Unknown)?;
-
-        let mut form = Form::new();
 
         // add properties
         for (key, val) in msg.iter() {
@@ -140,107 +152,51 @@ impl Bot {
                 etc => format!("{}", etc),
             };
 
-            form.part(key).contents(val.as_bytes()).add()?;
+            form.add_text(key.as_ref(), val.as_ref());
         }
 
-        form.part(kind)
-            .buffer(file_name, content)
-            .content_type("application/octet-stream")
-            .add()?;
-
-        let mut a = Easy::new();
-
-        a.post(true)?;
-        a.httppost(form)?;
-
-        Ok(a)
-    }
-
-    /// Calls the Telegram API for the function and awaits the result. The result is then converted
-    /// to a String and returned in a Future.
-    pub fn _fetch(
-        &self,
-        func: &str,
-        a: Result<Easy, Error>,
-    ) -> impl Future<Item = String, Error = Error> {
-        let response_vec = Arc::new(Mutex::new(Vec::new()));
-        let r1 = Arc::clone(&response_vec);
-
-        let session = self.session.clone();
-
-        a.and_then(|a| self.prepare_fetch(a, r1, func))
-            .into_future()
-            .and_then(move |a| {
-                session
-                    .perform(a)
-                    .map_err(Error::TokioCurl)
-                    .map(|_| response_vec)
-            })
-            .and_then(move |response_vec| {
-                let vec = &(response_vec.lock()?);
-                let s = str::from_utf8(vec)?;
-
-                debug!("Got a result from telegram: {}", s);
-                // try to parse the result as a JSON and find the OK field.
-                // If the ok field is true, then the string in "result" will be returned
-                let req = serde_json::from_str::<Value>(&s)?;
-
-                let ok = req.get("ok").and_then(Value::as_bool).ok_or(Error::JSON)?;
-
-                if ok {
-                    if let Some(result) = req.get("result") {
-                        return Ok(serde_json::to_string(result)?);
-                    }
-                }
-
-                match req.get("description").and_then(Value::as_str) {
-                    Some(err) => Err(Error::Telegram(err.into())),
-                    None => Err(Error::Telegram("Unknown".into())),
-                }
-            })
-    }
-
-    /// Configures cURL to call to the right address and write the response to a vector.
-    fn prepare_fetch(
-        &self,
-        mut a: Easy,
-        response_vec: Arc<Mutex<Vec<u8>>>,
-        func: &str,
-    ) -> Result<Easy, Error> {
-        let url = &format!("https://api.telegram.org/bot{}/{}", self.key, func);
-
-        a.url(url)?;
-
-        a.write_function(move |data| match response_vec.lock() {
-            Ok(ref mut vec) => {
-                vec.extend_from_slice(data);
-                Ok(data.len())
+        match file {
+            File::Memory { name, source } => {
+                form.add_reader_file(kind, source, &name);
             }
-            Err(_) => Ok(0),
-        })?;
+            File::Disk { path } => {
+                form.add_file(kind, path)?;
+            }
+        }
 
-        a.debug_function(|info, data| {
-            match info {
-                InfoType::DataOut => {
-                    println!("DataOut");
+        form.set_body(&mut req);
+
+        Ok((client, req))
+    }
+}
+
+/// Calls the Telegram API for the function and awaits the result. The result is then converted
+/// to a String and returned in a Future.
+pub fn _fetch(fut_res: FutureResponse) -> impl Future<Item = String, Error = Error> {
+    fut_res
+        .and_then(move |res| res.body().concat2())
+        .map_err(Error::from)
+        .and_then(move |response_chunks| {
+            let s = str::from_utf8(&response_chunks)?;
+
+            debug!("Got a result from telegram: {}", s);
+            // try to parse the result as a JSON and find the OK field.
+            // If the ok field is true, then the string in "result" will be returned
+            let req = serde_json::from_str::<Value>(&s)?;
+
+            let ok = req.get("ok").and_then(Value::as_bool).ok_or(Error::JSON)?;
+
+            if ok {
+                if let Some(result) = req.get("result") {
+                    return Ok(serde_json::to_string(result)?);
                 }
-                InfoType::Text => {
-                    println!("Text");
-                }
-                InfoType::HeaderOut => {
-                    println!("HeaderOut");
-                }
-                InfoType::SslDataOut => {
-                    println!("SslDataOut");
-                }
-                _ => println!("something else"),
             }
 
-            println!("{:?}", String::from_utf8_lossy(data));
-        })?;
-
-        Ok(a)
-    }
+            match req.get("description").and_then(Value::as_str) {
+                Some(err) => Err(Error::Telegram(err.into())),
+                None => Err(Error::Telegram("Unknown".into())),
+            }
+        })
 }
 
 impl RcBot {
@@ -299,7 +255,10 @@ impl RcBot {
             .flatten()
             .map_err(|_| Error::Unknown)
             .and_then(move |_| {
-                self.get_updates().offset(self.inner.last_id.get()).timeout(self.inner.timeout.get() as i64).send()
+                self.get_updates()
+                    .offset(self.inner.last_id.get())
+                    .timeout(self.inner.timeout.get() as i64)
+                    .send()
             })
             .map(|(_, x)| {
                 stream::iter_result(x.0.into_iter().map(|x| Ok(x)).collect::<Vec<
@@ -337,7 +296,11 @@ impl RcBot {
                 if let Some(cmd) = forward {
                     if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(&cmd) {
                         if let Some(msg) = val.message {
-                            sender.unbounded_send((self.clone(), msg)).unwrap_or_else(|e| error!("Error: {}", e));
+                            sender.unbounded_send((self.clone(), msg)).unwrap_or_else(
+                                |e| {
+                                    error!("Error: {}", e)
+                                },
+                            );
                         }
                     }
                     return None;

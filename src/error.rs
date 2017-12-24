@@ -4,9 +4,9 @@ use std::str;
 use std::sync::PoisonError;
 use std::error::Error as StdError;
 use serde_json::Error as JsonError;
-use curl::Error as CurlError;
-use curl::FormError;
-use tokio_curl::PerformError;
+use hyper::Error as HyperError;
+use hyper::error::UriError;
+use native_tls::Error as TlsError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -15,12 +15,12 @@ pub enum Error {
     UTF8Decode,
     // indicates a Telegram error (e.g. a property is missing)
     Telegram(String),
-    // indicates some failure in Tokio-CURL, missing network connection etc.
-    TokioCurl(PerformError),
-    // indicates some failure in CURL, failed to configure request, etc.
-    Curl(CurlError),
-    // indicates some failure in Curl's Form module, failed to build request, etc.
-    Form(FormError),
+    // indicates some failure in Hyper, missing network connection, etc.
+    Hyper(HyperError),
+    // indicates some failure with parsing a URI
+    Uri(UriError),
+    // indicates some failure with HTTPS
+    Tls(TlsError),
     // indicates an error reading or writing data
     IO(io::Error),
     // indicates a malformated reply, this should never happen unless the Telegram server has a
@@ -49,9 +49,9 @@ impl StdError for Error {
         match self {
             &Error::UTF8Decode => "reply could not be decoded",
             &Error::Telegram(_) => "telegram returned error",
-            &Error::TokioCurl(_) => "tokio-curl error",
-            &Error::Curl(_) => "curl error",
-            &Error::Form(_) => "curl form error",
+            &Error::Hyper(_) => "hyper error",
+            &Error::Uri(_) => "uri error",
+            &Error::Tls(_) => "tls error",
             &Error::IO(_) => "error reading or writing data",
             &Error::JSON => "malformed reply",
             &Error::NoFile => "error reading attached file",
@@ -61,11 +61,14 @@ impl StdError for Error {
 
     fn cause(&self) -> Option<&StdError> {
         match self {
-            &Error::UTF8Decode | &Error::JSON | &Error::NoFile | &Error::Unknown => None,
+            &Error::UTF8Decode |
+            &Error::JSON |
+            &Error::NoFile |
+            &Error::Unknown => None,
             &Error::Telegram(_) => None,
-            &Error::TokioCurl(ref e) => Some(e),
-            &Error::Curl(ref e) => Some(e),
-            &Error::Form(ref e) => Some(e),
+            &Error::Hyper(_) => None,
+            &Error::Uri(_) => None,
+            &Error::Tls(_) => None,
             &Error::IO(ref e) => Some(e),
         }
     }
@@ -89,26 +92,26 @@ impl From<str::Utf8Error> for Error {
     }
 }
 
-impl From<PerformError> for Error {
-    fn from(err: PerformError) -> Self {
-        Error::TokioCurl(err)
-    }
-}
-
-impl From<CurlError> for Error {
-    fn from(err: CurlError) -> Self {
-        Error::Curl(err)
-    }
-}
-
-impl From<FormError> for Error {
-    fn from(err: FormError) -> Self {
-        Error::Form(err)
+impl From<HyperError> for Error {
+    fn from(err: HyperError) -> Self {
+        Error::Hyper(err)
     }
 }
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
         Error::IO(err)
+    }
+}
+
+impl From<UriError> for Error {
+    fn from(err: UriError) -> Self {
+        Error::Uri(err)
+    }
+}
+
+impl From<TlsError> for Error {
+    fn from(err: TlsError) -> Self {
+        Error::Tls(err)
     }
 }

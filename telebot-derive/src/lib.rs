@@ -261,7 +261,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                             return Err((tmp, Error::Unknown));
                         })
                         .and_then(move |(tmp, msg, file)| {
-                            tmp.bot.fetch_formdata(#function, &msg, file.source, #bot_function_name, &file.name)
+                            tmp.bot.fetch_formdata(#function, &msg, file, #bot_function_name)
                                 .map_err(|err| (tmp, err))
                         })
                         .or_else(move |(tmp, err)| {
