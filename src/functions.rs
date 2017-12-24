@@ -402,7 +402,6 @@ pub struct GetGameHighScores {
     inline_message_id: Option<String>,
 }
 
-
 /// Use this method to get a list of profile pictures for a user. Returns a UserProfilePhotos
 /// object.
 #[derive(TelegramFunction, Serialize)]

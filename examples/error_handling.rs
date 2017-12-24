@@ -1,9 +1,11 @@
+extern crate failure;
 extern crate futures;
 extern crate telebot;
 extern crate tokio_core;
 
-use telebot::{Error, RcBot};
+use telebot::RcBot;
 use tokio_core::reactor::Core;
+use failure::Error;
 use futures::stream::Stream;
 use futures::Future;
 use std::env;
