@@ -98,7 +98,7 @@ pub struct Update {
     pub edited_channel_post: Option<Message>,
     pub inline_query: Option<InlineQuery>,
     pub chosen_inline_result: Option<()>,
-    pub callback_query: Option<()>,
+    pub callback_query: Option<CallbackQuery>,
 }
 
 /// This object represents one size of a photo or a file / sticker thumbnail.
@@ -208,21 +208,26 @@ pub struct File {
 
 /// This object represents a custom keyboard with reply options (see Introduction to bots for
 /// details and examples).
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ReplyKeyboardMarkup {
-    pub keyboard: Vec<KeyboardButton>,
+    pub keyboard: Vec<Vec<KeyboardButton>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub resize_keyboard: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub one_time_keyboard: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub selective: Option<bool>,
 }
 
 /// This object represents one button of the reply keyboard. For simple text buttons String can be
 /// used instead of this object to specify text of the button. Optional fields are mutually
 /// exclusive.
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct KeyboardButton {
     pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub request_contact: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub request_location: Option<bool>,
 }
 
@@ -230,9 +235,10 @@ pub struct KeyboardButton {
 /// keyboard and display the default letter-keyboard. By default, custom keyboards are displayed
 /// until a new keyboard is sent by a bot. An exception is made for one-time keyboards that are
 /// hidden immediately after the user presses a button (see ReplyKeyboardMarkup).
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ReplyKeyboardRemove {
     pub remove_keyboard: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub selective: Option<bool>,
 }
 
@@ -279,9 +285,10 @@ pub struct CallbackQuery {
 /// the user (act as if the user has selected the bot‘s message and tapped ’Reply'). This can be
 /// extremely useful if you want to create user-friendly step-by-step interfaces without having to
 /// sacrifice privacy mode.
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ForceReply {
     pub force_reply: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub selective: Option<bool>,
 }
 
