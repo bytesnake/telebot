@@ -1,6 +1,6 @@
 //! # Write a telegram bot in Rust
 //!
-//! This library allows you to write a Telegram Bot in Rust. It's an almost complete wrapper for the Telegram Bot API and uses tokio-curl to send a request to the Telegram server. Each Telegram function call returns a future and carries the actual bot and the answer.
+//! This library allows you to write a Telegram Bot in Rust. It's an almost complete wrapper for the Telegram Bot API and uses hyper to send a request to the Telegram server. Each Telegram function call returns a future and carries the actual bot and the answer.
 //! You can find all available functions in src/functions.rs. The crate telebot-derive implements all
 //! required getter, setter and send functions automatically.
 //!
@@ -67,10 +67,12 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 extern crate erased_serde;
-extern crate curl;
 extern crate futures;
 extern crate tokio_core;
-extern crate tokio_curl;
+extern crate hyper;
+extern crate hyper_tls;
+extern crate native_tls;
+extern crate hyper_multipart_rfc7578 as hyper_multipart;
 extern crate uuid;
 
 pub use bot::RcBot;
