@@ -2,7 +2,8 @@
 //! as an underlying field. You should always use RcBot.
 
 use objects;
-use error::Error;
+use failure::{ResultExt, Fail, Error};
+use error::ErrorKind;
 
 use std::str;
 use std::io;
@@ -62,7 +63,7 @@ impl Bot {
     }
 
     /// Creates a new request and adds a JSON message to it. The returned Future contains a the
-    /// reply as a string.  This method should be used if no file is added because a JSON msg is
+    /// reply as a string.  This method should be used if no file is added becontext a JSON msg is
     /// always compacter than a formdata one.
     pub fn fetch_json(
         &self,
@@ -81,13 +82,13 @@ impl Bot {
     fn build_json(&self, msg: &str) -> Result<Easy, Error> {
         let mut header = List::new();
 
-        header.append("Content-Type: application/json")?;
+        header.append("Content-Type: application/json").context(ErrorKind::cURL)?;
 
         let mut a = Easy::new();
 
-        a.http_headers(header)?;
-        a.post_fields_copy(msg.as_bytes())?;
-        a.post(true)?;
+        a.http_headers(header).context(ErrorKind::cURL)?;
+        a.post_fields_copy(msg.as_bytes()).context(ErrorKind::cURL)?;
+        a.post(true).context(ErrorKind::cURL)?;
 
         Ok(a)
     }
@@ -127,9 +128,9 @@ impl Bot {
     {
         let mut content = Vec::new();
 
-        file.read_to_end(&mut content)?;
+        file.read_to_end(&mut content).context(ErrorKind::IO)?;
 
-        let msg = msg.as_object().ok_or(Error::Unknown)?;
+        let msg = msg.as_object().ok_or(ErrorKind::Unknown)?;
 
         let mut form = Form::new();
 
@@ -140,18 +141,18 @@ impl Bot {
                 etc => format!("{}", etc),
             };
 
-            form.part(key).contents(val.as_bytes()).add()?;
+            form.part(key).contents(val.as_bytes()).add().context(ErrorKind::Form)?;
         }
 
         form.part(kind)
             .buffer(file_name, content)
             .content_type("application/octet-stream")
-            .add()?;
+            .add().context(ErrorKind::Form)?;
 
         let mut a = Easy::new();
 
-        a.post(true)?;
-        a.httppost(form)?;
+        a.post(true).context(ErrorKind::cURL)?;
+        a.httppost(form).context(ErrorKind::cURL)?;
 
         Ok(a)
     }
@@ -173,29 +174,31 @@ impl Bot {
             .and_then(move |a| {
                 session
                     .perform(a)
-                    .map_err(Error::TokioCurl)
+                    //.context(ErrorKind::TokioCurl)
+                    .map_err(|_| Error::from(ErrorKind::TokioCurl))
+                    //.map_err(|x| x.context(ErrorKind::TokioCurl))
                     .map(|_| response_vec)
             })
             .and_then(move |response_vec| {
-                let vec = &(response_vec.lock()?);
-                let s = str::from_utf8(vec)?;
+                let vec = &(response_vec.lock().map_err(|_| ErrorKind::Unknown)?);
+                let s = str::from_utf8(vec).context(ErrorKind::UTF8Decode)?;
 
                 debug!("Got a result from telegram: {}", s);
                 // try to parse the result as a JSON and find the OK field.
                 // If the ok field is true, then the string in "result" will be returned
-                let req = serde_json::from_str::<Value>(&s)?;
+                let req = serde_json::from_str::<Value>(&s).context(ErrorKind::JSON)?;
 
-                let ok = req.get("ok").and_then(Value::as_bool).ok_or(Error::JSON)?;
+                let ok = req.get("ok").and_then(Value::as_bool).ok_or(ErrorKind::JSON)?;
 
                 if ok {
                     if let Some(result) = req.get("result") {
-                        return Ok(serde_json::to_string(result)?);
+                        return Ok(serde_json::to_string(result).context(ErrorKind::JSON)?);
                     }
                 }
 
                 match req.get("description").and_then(Value::as_str) {
-                    Some(err) => Err(Error::Telegram(err.into())),
-                    None => Err(Error::Telegram("Unknown".into())),
+                    Some(err) => Err(Error::from(format_err!("{}", err).context(ErrorKind::Telegram))),
+                    None => Err(Error::from(format_err!("No description!").context(ErrorKind::Telegram))),
                 }
             })
     }
@@ -209,7 +212,7 @@ impl Bot {
     ) -> Result<Easy, Error> {
         let url = &format!("https://api.telegram.org/bot{}/{}", self.key, func);
 
-        a.url(url)?;
+        a.url(url).context(ErrorKind::cURL)?;
 
         a.write_function(move |data| match response_vec.lock() {
             Ok(ref mut vec) => {
@@ -217,7 +220,7 @@ impl Bot {
                 Ok(data.len())
             }
             Err(_) => Ok(0),
-        })?;
+        }).context(ErrorKind::cURL)?;
 
         a.debug_function(|info, data| {
             match info {
@@ -237,7 +240,7 @@ impl Bot {
             }
 
             println!("{:?}", String::from_utf8_lossy(data));
-        })?;
+        }).context(ErrorKind::cURL)?;
 
         Ok(a)
     }
@@ -267,7 +270,7 @@ impl RcBot {
 
         self.inner.handlers.borrow_mut().insert(cmd.into(), sender);
 
-        receiver.map_err(|_| Error::Unknown)
+        receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
     }
 
     /// Register a new commnd
@@ -297,7 +300,7 @@ impl RcBot {
             .into_future()
             .into_stream()
             .flatten()
-            .map_err(|_| Error::Unknown)
+            .map_err(|x| Error::from(x.context(ErrorKind::IntervalTimer)))
             .and_then(move |_| {
                 self.get_updates().offset(self.inner.last_id.get()).timeout(self.inner.timeout.get() as i64).send()
             })
@@ -349,6 +352,6 @@ impl RcBot {
 
     /// helper function to start the event loop
     pub fn run<'a>(&'a self, core: &mut Core) -> Result<(), Error> {
-        core.run(self.get_stream().for_each(|_| Ok(())).into_future())
+        core.run(self.get_stream().for_each(|_| Ok(())).into_future()).context(ErrorKind::Tokio).map_err(Error::from)
     }
 }

@@ -1,114 +1,86 @@
-use std::io;
 use std::fmt;
-use std::str;
-use std::sync::PoisonError;
-use std::error::Error as StdError;
-use serde_json::Error as JsonError;
-use curl::Error as CurlError;
-use curl::FormError;
-use tokio_curl::PerformError;
+
+use failure::{Context, Fail, Backtrace};
+use std::fmt::Display;
 
 #[derive(Debug)]
-pub enum Error {
+pub struct Error {
+    inner: Context<ErrorKind>
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+pub enum ErrorKind {
     // indicates that the received reply couldn't be decoded (e.g. caused by an aborted
     // connection)
+    #[fail(display="Wrong string format, couldn't parse as UTF8")]
     UTF8Decode,
     // indicates a Telegram error (e.g. a property is missing)
-    Telegram(String),
+    #[fail(display="Telegram server responsed with an error")]
+    Telegram,
     // indicates some failure in Tokio-CURL, missing network connection etc.
-    TokioCurl(PerformError),
+    #[fail(display="Failure in the Tokio-cURL library")]
+    TokioCurl,
     // indicates some failure in CURL, failed to configure request, etc.
-    Curl(CurlError),
+    #[fail(display="Failed to configure request")]
+    cURL,
     // indicates some failure in Curl's Form module, failed to build request, etc.
-    Form(FormError),
+    #[fail(display="Failed to build form part of the request")]
+    Form,
     // indicates an error reading or writing data
-    IO(io::Error),
+    #[fail(display="Failed to read or write data")]
+    IO,
     // indicates a malformated reply, this should never happen unless the Telegram server has a
     // hard time
+    #[fail(display="Failed to parse a JSON string")]
     JSON,
-    // indicates whether a file was supposed to be attached, but wasn't properly read
+
+    #[fail(display="Failed to create a channel")]
+    Channel,
+
+    #[fail(display="Failed to create the interval timer")]
+    IntervalTimer,
+
+    #[fail(display="Tokio library caused error")]
+    Tokio,
+
+    #[fail(display="Please specify a file")]
     NoFile,
+
     // indicates an unknown error
+    #[fail(display="Unknown error")]
     Unknown,
 }
 
-impl fmt::Display for Error {
+impl Fail for Error {
+    fn cause(&self) -> Option<&Fail> {
+        self.inner.cause()
+    }
+
+    fn backtrace(&self) -> Option<&Backtrace> {
+        self.inner.backtrace()
+    }
+}
+
+impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())?;
-
-        if let &Error::Telegram(ref message) = self {
-            write!(f, ": {}", message)?;
-        }
-
-        Ok(())
+        Display::fmt(&self.inner, f)
     }
 }
 
-impl StdError for Error {
-    fn description(&self) -> &str {
-        match self {
-            &Error::UTF8Decode => "reply could not be decoded",
-            &Error::Telegram(_) => "telegram returned error",
-            &Error::TokioCurl(_) => "tokio-curl error",
-            &Error::Curl(_) => "curl error",
-            &Error::Form(_) => "curl form error",
-            &Error::IO(_) => "error reading or writing data",
-            &Error::JSON => "malformed reply",
-            &Error::NoFile => "error reading attached file",
-            &Error::Unknown => "unknown error",
-        }
-    }
-
-    fn cause(&self) -> Option<&StdError> {
-        match self {
-            &Error::UTF8Decode | &Error::JSON | &Error::NoFile | &Error::Unknown => None,
-            &Error::Telegram(_) => None,
-            &Error::TokioCurl(ref e) => Some(e),
-            &Error::Curl(ref e) => Some(e),
-            &Error::Form(ref e) => Some(e),
-            &Error::IO(ref e) => Some(e),
-        }
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        *self.inner.get_context()
     }
 }
 
-impl From<JsonError> for Error {
-    fn from(_: JsonError) -> Self {
-        Error::JSON
+impl From<ErrorKind> for Error {
+    fn from(kind: ErrorKind) -> Error {
+        Error { inner: Context::new(kind) }
     }
 }
 
-impl<T> From<PoisonError<T>> for Error {
-    fn from(_: PoisonError<T>) -> Self {
-        Error::Unknown
-    }
-}
-
-impl From<str::Utf8Error> for Error {
-    fn from(_: str::Utf8Error) -> Self {
-        Error::UTF8Decode
-    }
-}
-
-impl From<PerformError> for Error {
-    fn from(err: PerformError) -> Self {
-        Error::TokioCurl(err)
-    }
-}
-
-impl From<CurlError> for Error {
-    fn from(err: CurlError) -> Self {
-        Error::Curl(err)
-    }
-}
-
-impl From<FormError> for Error {
-    fn from(err: FormError) -> Self {
-        Error::Form(err)
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Error::IO(err)
+impl From<Context<ErrorKind>> for Error {
+    fn from(inner: Context<ErrorKind>) -> Error {
+        Error { inner: inner }
     }
 }

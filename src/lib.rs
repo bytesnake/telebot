@@ -73,8 +73,11 @@ extern crate tokio_core;
 extern crate tokio_curl;
 extern crate uuid;
 
+#[macro_use]
+extern crate failure;
+
 pub use bot::RcBot;
-pub use error::Error;
+//pub use error::Error;
 pub use file::File;
 
 pub mod bot;

@@ -25,3 +25,4 @@ tokio-curl = "0.1.6"
 uuid = { version = "0.2", features = ["v4"] }
 telebot-derive = {version = "0.0.9", path = "./telebot-derive/"}
 log = "0.3"
+failure = "0.1.1"

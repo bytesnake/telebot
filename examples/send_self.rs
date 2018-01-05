@@ -21,7 +21,7 @@ fn main() {
         bot.document(msg.chat.id)
             .file("examples/send_self.rs")
             .send()
-    });
+    }).map_err(|err| println!("{:?}", err.cause()));
 
     bot.register(handle);
 
