@@ -1,6 +1,6 @@
 [package]
 name = "telebot"
-version = "0.2.5"
+version = "0.2.6"
 
 authors = ["bytesnake <bytesnake@mailbox.org>"]
 license = "MIT/Apache-2.0"
@@ -23,6 +23,6 @@ futures = "0.1.7"
 tokio-core = "0.1.2"
 tokio-curl = "0.1.6"
 uuid = { version = "0.2", features = ["v4"] }
-telebot-derive = {version = "0.0.9", path = "./telebot-derive/"}
+telebot-derive = {version = "0.0.10", path = "./telebot-derive/"}
 log = "0.3"
 failure = "0.1.1"
