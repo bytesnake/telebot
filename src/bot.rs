@@ -348,35 +348,31 @@ impl RcBot {
             })
             .filter_map(move |mut val| {
                 debug!("Got an update from Telegram: {:?}", val);
-                let mut forward: Option<String> = None;
+
+                let mut sndr: Option<UnboundedSender<(RcBot, objects::Message)>> = None;
 
                 if let Some(ref mut message) = val.message {
                     if let Some(text) = message.text.clone() {
                         let mut content = text.split_whitespace();
                         if let Some(cmd) = content.next() {
-                            if self.inner.handlers.borrow_mut().contains_key(cmd) {
+                            if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(cmd) {
+                                sndr = Some(sender.clone());
                                 message.text = Some(content.collect::<Vec<&str>>().join(" "));
-                                forward = Some(cmd.into());
+                            } else if let Some(ref mut sender) =
+                                *self.inner.default_handler.borrow_mut()
+                            {
+                                sndr = Some(sender.clone());
+                            } else {
+                                sndr = None
                             }
                         }
                     }
                 }
 
-                if let Some(cmd) = forward {
-                    if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(&cmd) {
-                        if let Some(msg) = val.message {
-                            sender
-                                .unbounded_send((self.clone(), msg))
-                                .unwrap_or_else(|e| error!("Error: {}", e));
-                        }
-                    }
-                    return None;
-                } else if let Some(ref mut sender) = *self.inner.default_handler.borrow_mut() {
-                    if let Some(msg) = val.message {
-                        sender
-                            .unbounded_send((self.clone(), msg))
-                            .unwrap_or_else(|e| error!("Error: {}", e));
-                    }
+                if let Some(sender) = sndr {
+                    sender
+                        .unbounded_send((self.clone(), val.message.unwrap()))
+                        .unwrap_or_else(|e| error!("Error: {}", e));
                     return None;
                 } else {
                     return Some((self.clone(), val));
