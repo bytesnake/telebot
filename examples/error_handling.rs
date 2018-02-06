@@ -1,8 +1,8 @@
+extern crate futures;
 extern crate telebot;
 extern crate tokio_core;
-extern crate futures;
 
-use telebot::{RcBot, Error};
+use telebot::{Error, RcBot};
 use tokio_core::reactor::Core;
 use futures::stream::Stream;
 use futures::Future;
@@ -45,9 +45,9 @@ fn main() {
             return Err((bot, msg, LocationErr::WrongLocationFormat));
         })
         .and_then(|(bot, msg, long, alt)| {
-            bot.location(msg.chat.id, long, alt).send().map_err(|err| {
-                (bot, msg, LocationErr::Telegram(err))
-            })
+            bot.location(msg.chat.id, long, alt)
+                .send()
+                .map_err(|err| (bot, msg, LocationErr::Telegram(err)))
         })
         .or_else(|(bot, msg, err)| {
             let text = {
@@ -89,11 +89,10 @@ fn main() {
                 })
         })
         .and_then(|(bot, msg, file_id)| {
-            bot.photo(msg.chat.id).file_id(file_id).send().map_err(
-                |err| {
-                    (bot, msg, PhotoErr::Telegram(err))
-                },
-            )
+            bot.photo(msg.chat.id)
+                .file_id(file_id)
+                .send()
+                .map_err(|err| (bot, msg, PhotoErr::Telegram(err)))
         })
         .or_else(|(bot, msg, err)| {
             let text = match err {

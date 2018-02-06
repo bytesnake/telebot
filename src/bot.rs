@@ -2,7 +2,7 @@
 //! as an underlying field. You should always use RcBot.
 
 use objects;
-use failure::{ResultExt, Fail, Error};
+use failure::{Error, Fail, ResultExt};
 use error::ErrorKind;
 
 use std::str;
@@ -10,15 +10,15 @@ use std::io;
 use std::time::Duration;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::cell::{RefCell, Cell};
+use std::cell::{Cell, RefCell};
 use std::sync::{Arc, Mutex};
 
-use curl::easy::{Easy, List, Form, InfoType};
+use curl::easy::{Easy, Form, InfoType, List};
 use tokio_curl::Session;
-use tokio_core::reactor::{Handle, Core, Interval};
+use tokio_core::reactor::{Core, Handle, Interval};
 use serde_json;
 use serde_json::value::Value;
-use futures::{Future, IntoFuture, Stream, stream};
+use futures::{stream, Future, IntoFuture, Stream};
 use futures::sync::mpsc;
 use futures::sync::mpsc::UnboundedSender;
 
@@ -32,7 +32,9 @@ pub struct RcBot {
 
 impl RcBot {
     pub fn new(handle: Handle, key: &str) -> RcBot {
-        RcBot { inner: Rc::new(Bot::new(handle, key)) }
+        RcBot {
+            inner: Rc::new(Bot::new(handle, key)),
+        }
     }
 }
 
@@ -44,6 +46,7 @@ pub struct Bot {
     pub update_interval: Cell<u64>,
     pub timeout: Cell<u64>,
     pub handlers: RefCell<HashMap<String, UnboundedSender<(RcBot, objects::Message)>>>,
+    pub default_handler: RefCell<Option<UnboundedSender<(RcBot, objects::Message)>>>,
     pub session: Session,
 }
 
@@ -58,6 +61,7 @@ impl Bot {
             update_interval: Cell::new(1000),
             timeout: Cell::new(30),
             handlers: RefCell::new(HashMap::new()),
+            default_handler: RefCell::new(None),
             session: Session::new(handle.clone()),
         }
     }
@@ -82,7 +86,9 @@ impl Bot {
     fn build_json(&self, msg: &str) -> Result<Easy, Error> {
         let mut header = List::new();
 
-        header.append("Content-Type: application/json").context(ErrorKind::cURL)?;
+        header
+            .append("Content-Type: application/json")
+            .context(ErrorKind::cURL)?;
 
         let mut a = Easy::new();
 
@@ -92,7 +98,6 @@ impl Bot {
 
         Ok(a)
     }
-
 
     /// Creates a new request with some byte content (e.g. a file). The method properties have to be
     /// in the formdata setup and cannot be sent as JSON.
@@ -141,13 +146,17 @@ impl Bot {
                 etc => format!("{}", etc),
             };
 
-            form.part(key).contents(val.as_bytes()).add().context(ErrorKind::Form)?;
+            form.part(key)
+                .contents(val.as_bytes())
+                .add()
+                .context(ErrorKind::Form)?;
         }
 
         form.part(kind)
             .buffer(file_name, content)
             .content_type("application/octet-stream")
-            .add().context(ErrorKind::Form)?;
+            .add()
+            .context(ErrorKind::Form)?;
 
         let mut a = Easy::new();
 
@@ -188,7 +197,9 @@ impl Bot {
                 // If the ok field is true, then the string in "result" will be returned
                 let req = serde_json::from_str::<Value>(&s).context(ErrorKind::JSON)?;
 
-                let ok = req.get("ok").and_then(Value::as_bool).ok_or(ErrorKind::JSON)?;
+                let ok = req.get("ok")
+                    .and_then(Value::as_bool)
+                    .ok_or(ErrorKind::JSON)?;
 
                 if ok {
                     if let Some(result) = req.get("result") {
@@ -197,8 +208,12 @@ impl Bot {
                 }
 
                 match req.get("description").and_then(Value::as_str) {
-                    Some(err) => Err(Error::from(format_err!("{}", err).context(ErrorKind::Telegram))),
-                    None => Err(Error::from(format_err!("No description!").context(ErrorKind::Telegram))),
+                    Some(err) => Err(Error::from(
+                        format_err!("{}", err).context(ErrorKind::Telegram),
+                    )),
+                    None => Err(Error::from(
+                        format_err!("No description!").context(ErrorKind::Telegram),
+                    )),
                 }
             })
     }
@@ -273,6 +288,14 @@ impl RcBot {
         receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
     }
 
+    pub fn default_cmd(&self) -> impl Stream<Item = (RcBot, objects::Message), Error = Error> {
+        let (sender, receiver) = mpsc::unbounded();
+
+        *self.inner.default_handler.borrow_mut() = Some(sender);
+
+        receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
+    }
+
     /// Register a new commnd
     pub fn register<T>(&self, hnd: T)
     where
@@ -302,15 +325,18 @@ impl RcBot {
             .flatten()
             .map_err(|x| Error::from(x.context(ErrorKind::IntervalTimer)))
             .and_then(move |_| {
-                self.get_updates().offset(self.inner.last_id.get()).timeout(self.inner.timeout.get() as i64).send()
+                self.get_updates()
+                    .offset(self.inner.last_id.get())
+                    .timeout(self.inner.timeout.get() as i64)
+                    .send()
             })
             .map(|(_, x)| {
-                stream::iter_result(x.0.into_iter().map(|x| Ok(x)).collect::<Vec<
-                    Result<
-                        objects::Update,
-                        Error,
-                    >,
-                >>())
+                stream::iter_result(
+                    x.0
+                        .into_iter()
+                        .map(|x| Ok(x))
+                        .collect::<Vec<Result<objects::Update, Error>>>(),
+                )
             })
             .flatten()
             .and_then(move |x| {
@@ -330,7 +356,6 @@ impl RcBot {
                         if let Some(cmd) = content.next() {
                             if self.inner.handlers.borrow_mut().contains_key(cmd) {
                                 message.text = Some(content.collect::<Vec<&str>>().join(" "));
-
                                 forward = Some(cmd.into());
                             }
                         }
@@ -340,8 +365,17 @@ impl RcBot {
                 if let Some(cmd) = forward {
                     if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(&cmd) {
                         if let Some(msg) = val.message {
-                            sender.unbounded_send((self.clone(), msg)).unwrap_or_else(|e| error!("Error: {}", e));
+                            sender
+                                .unbounded_send((self.clone(), msg))
+                                .unwrap_or_else(|e| error!("Error: {}", e));
                         }
+                    }
+                    return None;
+                } else if let Some(ref mut sender) = *self.inner.default_handler.borrow_mut() {
+                    if let Some(msg) = val.message {
+                        sender
+                            .unbounded_send((self.clone(), msg))
+                            .unwrap_or_else(|e| error!("Error: {}", e));
                     }
                     return None;
                 } else {
@@ -352,6 +386,8 @@ impl RcBot {
 
     /// helper function to start the event loop
     pub fn run<'a>(&'a self, core: &mut Core) -> Result<(), Error> {
-        core.run(self.get_stream().for_each(|_| Ok(())).into_future()).context(ErrorKind::Tokio).map_err(Error::from)
+        core.run(self.get_stream().for_each(|_| Ok(())).into_future())
+            .context(ErrorKind::Tokio)
+            .map_err(Error::from)
     }
 }

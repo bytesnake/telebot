@@ -1,7 +1,7 @@
+extern crate erased_serde;
+extern crate futures;
 extern crate telebot;
 extern crate tokio_core;
-extern crate futures;
-extern crate erased_serde;
 
 use telebot::RcBot;
 use tokio_core::reactor::Core;
@@ -24,21 +24,19 @@ fn main() {
     let stream = bot.get_stream()
         .filter_map(|(bot, msg)| msg.inline_query.map(|query| (bot, query)))
         .and_then(|(bot, query)| {
-            let result: Vec<Box<Serialize>> =
-                vec![
-                    Box::new(
-                        InlineQueryResultArticle::new(
-                            "Test".into(),
-                            Box::new(InputMessageContent::Text::new("This is a test".into())),
-                        ).reply_markup(InlineKeyboardMarkup::new(vec![
-                            vec![
-                                InlineKeyboardButton::new("Wikipedia".into()).url(
-                                    "http://wikipedia.org"
-                                ),
-                            ],
-                        ]))
-                    ),
-                ];
+            let result: Vec<Box<Serialize>> = vec![
+                Box::new(
+                    InlineQueryResultArticle::new(
+                        "Test".into(),
+                        Box::new(InputMessageContent::Text::new("This is a test".into())),
+                    ).reply_markup(InlineKeyboardMarkup::new(vec![
+                        vec![
+                            InlineKeyboardButton::new("Wikipedia".into())
+                                .url("http://wikipedia.org"),
+                        ],
+                    ])),
+                ),
+            ];
 
             bot.answer_inline_query(query.id, result)
                 .is_personal(true)
