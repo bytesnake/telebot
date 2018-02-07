@@ -46,7 +46,7 @@ pub struct Bot {
     pub update_interval: Cell<u64>,
     pub timeout: Cell<u64>,
     pub handlers: RefCell<HashMap<String, UnboundedSender<(RcBot, objects::Message)>>>,
-    pub default_handler: RefCell<Option<UnboundedSender<(RcBot, objects::Message)>>>,
+    pub unknown_handler: RefCell<Option<UnboundedSender<(RcBot, objects::Message)>>>,
     pub session: Session,
 }
 
@@ -61,7 +61,7 @@ impl Bot {
             update_interval: Cell::new(1000),
             timeout: Cell::new(30),
             handlers: RefCell::new(HashMap::new()),
-            default_handler: RefCell::new(None),
+            unknown_handler: RefCell::new(None),
             session: Session::new(handle.clone()),
         }
     }
@@ -288,10 +288,11 @@ impl RcBot {
         receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
     }
 
-    pub fn default_cmd(&self) -> impl Stream<Item = (RcBot, objects::Message), Error = Error> {
+    /// Returns a stream which will yield a message when none of previously registered commands matches
+    pub fn unknown_cmd(&self) -> impl Stream<Item = (RcBot, objects::Message), Error = Error> {
         let (sender, receiver) = mpsc::unbounded();
 
-        *self.inner.default_handler.borrow_mut() = Some(sender);
+        *self.inner.unknown_handler.borrow_mut() = Some(sender);
 
         receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
     }
@@ -359,7 +360,7 @@ impl RcBot {
                                 sndr = Some(sender.clone());
                                 message.text = Some(content.collect::<Vec<&str>>().join(" "));
                             } else if let Some(ref mut sender) =
-                                *self.inner.default_handler.borrow_mut()
+                                *self.inner.unknown_handler.borrow_mut()
                             {
                                 sndr = Some(sender.clone());
                             } else {
