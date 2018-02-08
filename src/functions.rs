@@ -50,12 +50,13 @@ pub enum ReplyMarkup {
     InlineKeyboardMarkup(objects::InlineKeyboardMarkup),
     ReplyKeyboardMarkup(objects::ReplyKeyboardMarkup),
     ReplyKeyboardRemove(objects::ReplyKeyboardRemove),
-    ForceReply(objects::ForceReply)
+    ForceReply(objects::ForceReply),
 }
 
 impl ::serde::Serialize for ReplyMarkup {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: ::serde::Serializer
+    where
+        S: ::serde::Serializer,
     {
         use self::ReplyMarkup::*;
 

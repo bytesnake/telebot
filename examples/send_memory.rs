@@ -1,6 +1,6 @@
+extern crate futures;
 extern crate telebot;
 extern crate tokio_core;
-extern crate futures;
 
 use telebot::RcBot;
 use tokio_core::reactor::Core;

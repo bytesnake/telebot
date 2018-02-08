@@ -64,11 +64,11 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
+extern crate curl;
+extern crate erased_serde;
+extern crate futures;
 extern crate serde;
 extern crate serde_json;
-extern crate erased_serde;
-extern crate curl;
-extern crate futures;
 extern crate tokio_core;
 extern crate tokio_curl;
 extern crate uuid;
