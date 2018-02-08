@@ -283,6 +283,12 @@ impl RcBot {
     ) -> impl Stream<Item = (RcBot, objects::Message), Error = Error> {
         let (sender, receiver) = mpsc::unbounded();
 
+        let cmd = if cmd.starts_with("/") {
+            cmd.into()
+        } else {
+            format!("/{}", cmd)
+        };
+
         self.inner.handlers.borrow_mut().insert(cmd.into(), sender);
 
         receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
@@ -356,15 +362,15 @@ impl RcBot {
                     if let Some(text) = message.text.clone() {
                         let mut content = text.split_whitespace();
                         if let Some(cmd) = content.next() {
-                            if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(cmd) {
-                                sndr = Some(sender.clone());
-                                message.text = Some(content.collect::<Vec<&str>>().join(" "));
-                            } else if let Some(ref mut sender) =
-                                *self.inner.unknown_handler.borrow_mut()
-                            {
-                                sndr = Some(sender.clone());
-                            } else {
-                                sndr = None
+                            if cmd.starts_with("/") {
+                                if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(cmd) {
+                                    sndr = Some(sender.clone());
+                                    message.text = Some(content.collect::<Vec<&str>>().join(" "));
+                                } else if let Some(ref mut sender) =
+                                    *self.inner.unknown_handler.borrow_mut()
+                                {
+                                    sndr = Some(sender.clone());
+                                }
                             }
                         }
                     }
