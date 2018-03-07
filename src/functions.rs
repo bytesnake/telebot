@@ -365,6 +365,44 @@ pub struct SendAction {
     action: String,
 }
 
+#[derive(TelegramFunction, Serialize)]
+#[call = "sendGame"]
+#[answer = "Message"]
+#[function = "send_game"]
+pub struct SendGame {
+    chat_id: Integer,
+    game_short_name: String,
+    disable_notification: Option<bool>,
+    reply_to_message_id: Option<Integer>,
+    reply_markup: Option<objects::InlineKeyboardMarkup>,
+}
+
+#[derive(TelegramFunction, Serialize)]
+#[call = "setGameScore"]
+#[answer = "Message"]
+#[function = "set_game_score"]
+pub struct SetGameScore {
+    user_id: Integer,
+    score: Integer,
+    force: Option<bool>,
+    disable_edit_message: Option<bool>,
+    chat_id: Option<Integer>,
+    message_id: Option<Integer>,
+    inline_message_id: Option<String>,
+}
+
+#[derive(TelegramFunction, Serialize)]
+#[call = "getGameHighScores"]
+#[answer = "GameHighScore"]
+#[function = "get_game_high_scores"]
+pub struct GetGameHighScores {
+    user_id: Integer,
+    chat_id: Option<Integer>,
+    message_id: Option<Integer>,
+    inline_message_id: Option<String>,
+}
+
+
 /// Use this method to get a list of profile pictures for a user. Returns a UserProfilePhotos
 /// object.
 #[derive(TelegramFunction, Serialize)]

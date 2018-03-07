@@ -150,6 +150,13 @@ pub struct Game {
     pub animation: Option<Animation>,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct GameHighScore {
+    pub position: Integer,
+    pub user: User,
+    pub score: Integer,
+}
+
 /// This object represents a sticker.
 #[derive(Deserialize, Debug)]
 pub struct Sticker {
