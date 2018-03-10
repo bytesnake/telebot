@@ -64,9 +64,8 @@ pub struct Message {
     pub entities: Option<Vec<MessageEntity>>,
     pub audio: Option<Audio>,
     pub document: Option<Document>,
-    pub game: Option<NotImplemented>,
+    pub game: Option<Game>,
     pub photo: Option<Vec<PhotoSize>>,
-    pub sticker: Option<Sticker>,
     pub video: Option<Video>,
     pub voice: Option<Voice>,
     pub caption: Option<String>,
@@ -129,6 +128,33 @@ pub struct Document {
     pub file_name: Option<String>,
     pub mime_type: Option<String>,
     pub file_size: Option<Integer>,
+}
+
+/// This object represents an animation file to be displayed in the message containing a game
+#[derive(Deserialize, Debug)]
+pub struct Animation {
+    pub file_id: String,
+    pub thumb: Option<PhotoSize>,
+    pub file_name: Option<String>,
+    pub mime_type: Option<String>,
+    pub file_size: Option<Integer>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Game {
+    pub title: String,
+    pub description: Option<String>,
+    pub photo: Option<Vec<PhotoSize>>,
+    pub text: Option<String>,
+    pub text_entities: Option<Vec<MessageEntity>>,
+    pub animation: Option<Animation>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GameHighScore {
+    pub position: Integer,
+    pub user: User,
+    pub score: Integer,
 }
 
 /// This object represents a sticker.
