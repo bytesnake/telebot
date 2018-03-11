@@ -66,6 +66,7 @@ pub struct Message {
     pub document: Option<Document>,
     pub game: Option<Game>,
     pub photo: Option<Vec<PhotoSize>>,
+    pub sticker: Option<Sticker>,
     pub video: Option<Video>,
     pub voice: Option<Voice>,
     pub caption: Option<String>,
