@@ -255,18 +255,17 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                                         return Ok((tmp, msg, None));
                                     }
                                 },
-                                Err(err) => Err(Error::from(err.context(ErrorKind::JSON)))
+                                Err(err) => Err(Error::from(err.context(ErrorKind::JsonSerialize)))
                             }
                         })
-                        
                         .and_then(move |(tmp, msg, file)| {
                             let bot = tmp.bot.clone();
                             let bot2 = tmp.bot.clone();
                             let msg_str = serde_json::to_string(&msg).unwrap();
 
-                            file.ok_or(Error::from(ErrorKind::Unknown)).into_future()
+                            file.ok_or(Error::from(ErrorKind::NoFile)).into_future()
                                 .and_then(move |file| {
-                                    bot.fetch_formdata(#function, &msg, file.source, #bot_function_name, &file.name)
+                                    bot.fetch_formdata(#function, &msg, file, #bot_function_name)
                                 })
                                 .or_else(move |_| {
                                     bot2.fetch_json(#function, &msg_str)
@@ -277,7 +276,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
 
                             serde_json::from_str::<objects::#answer>(&answer)
                                 .map(|json| (bot, json))
-                                .map_err(|x| Error::from(x.context(ErrorKind::JSON)))
+                                .map_err(|x| Error::from(x.context(ErrorKind::JsonParse)))
                         })
                 }
                
@@ -334,7 +333,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                 pub fn send<'a>(self) -> impl Future<Item=(RcBot, objects::#answer), Error=Error> + 'a{
                     use futures::future::result;
                     result(serde_json::to_string(&self.inner))
-                        .map_err(|e| Error::from(e.context(ErrorKind::JSON)))
+                        .map_err(|e| Error::from(e.context(ErrorKind::JsonSerialize)))
                         .and_then(move |msg| {
                             let obj = self.bot.fetch_json(#function, &msg)
                                 .and_then(move |x| {
@@ -344,7 +343,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
 
                                     serde_json::from_str::<objects::#answer>(&x)
                                         .map(|json| (bot, json))
-                                        .map_err(|x| Error::from(x.context(ErrorKind::JSON)))
+                                        .map_err(|x| Error::from(x.context(ErrorKind::JsonParse)))
                                 });
 
                             Box::new(obj)
@@ -377,3 +376,4 @@ fn config_from(attrs: &[syn::Attribute]) -> BTreeMap<String, String> {
     }
     result
 }
+

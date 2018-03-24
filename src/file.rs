@@ -3,41 +3,47 @@
 //! The filename should be such that it represents the content type.
 
 use std::io::Read;
-use std::fs;
 use std::convert::TryFrom;
-use failure::{Error, ResultExt};
+use std::path::Path;
+use failure::Error;
 use error::ErrorKind;
 
 /// A Telegram file which contains a readable source and a filename
-pub struct File {
-    pub name: String,
-    pub source: Box<Read>,
+pub enum File {
+    Memory {
+        name: String,
+        source: Box<Read + Send>,
+    },
+    Disk {
+        path: String,
+    },
 }
 
 /// Construct a Telegram file from a local path
 impl<'a> TryFrom<&'a str> for File {
     type Error = Error;
 
-    fn try_from(path: &'a str) -> Result<Self, Error> {
-        let file = fs::File::open(path).context(ErrorKind::IO)?;
+    fn try_from(path: &'a str) -> Result<Self, Self::Error> {
+        let file = Path::new(path);
 
-        Ok(File {
-            name: path.into(),
-            source: Box::new(file),
-        })
+        if file.is_file() {
+            Ok(File::Disk { path: path.into() })
+        } else {
+            Err(Error::from(ErrorKind::NoFile))
+        }
     }
 }
 
 /// Construct a Telegram file from an object which implements the Read trait
-impl<'a, S: Read + 'static> TryFrom<(&'a str, S)> for File {
+impl<'a, S: Read + Send + 'static> TryFrom<(&'a str, S)> for File {
     type Error = Error;
 
-    fn try_from((path, source): (&'a str, S)) -> Result<Self, Error>
+    fn try_from((name, source): (&'a str, S)) -> Result<Self, Self::Error>
     where
-        S: Read + 'static,
+        S: Read + Send,
     {
-        Ok(File {
-            name: path.into(),
+        Ok(File::Memory {
+            name: name.into(),
             source: Box::new(source),
         })
     }
