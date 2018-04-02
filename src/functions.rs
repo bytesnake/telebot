@@ -546,3 +546,19 @@ pub struct AnswerInlineQuery {
     #[serde(skip_serializing_if = "Option::is_none")]
     switch_pm_parameter: Option<String>,
 }
+
+///Use this method to create new sticker set owned by a user.
+///The bot will be able to edit the created sticker set. Returns True on success.
+#[derive(TelegramFunction, Serialize)]
+#[call = "createNewStickerSet"]
+#[answer = "Boolean"]
+#[function = "create_new_sticker_set"]
+#[file_kind = "png_sticker"]
+pub struct CreateNewStickerSet {
+    user_id: Integer,
+    name: String,
+    title: String,
+    emojis: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    png_sticker: Option<String>,
+}
