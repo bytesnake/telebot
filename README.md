@@ -12,7 +12,7 @@ This library allows you to write a Telegram Bot in Rust. It's an almost complete
 Add this to your `Cargo.toml`
 ``` toml
 [dependencies]
-telebot = "0.2.7"
+telebot = "0.2.8"
 ```
 
 ## How it works
