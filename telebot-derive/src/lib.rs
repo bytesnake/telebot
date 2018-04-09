@@ -102,12 +102,12 @@
                     #(
                         pub fn #field_optional<S>(mut self, val: S) -> Self where S: Into<#ty_optional> {
                             self.#field_optional2 = Some(val.into());
-                
+
                             self
                         }
                     )*
                 }
-            
+
             }
         } else {
             quote! {
@@ -119,12 +119,12 @@
                     #(
                         pub fn #field_optional<S>(mut self, val: S) -> Self where S: Into<#ty_optional> {
                             self.#field_optional2 = Some(val.into());
-                
+
                             self
                         }
                     )*
                 }
-            
+
             }
         }
     }
@@ -211,7 +211,6 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
 
     let trait_name = syn::Ident::from(format!("Function{}",  name.as_ref()));
     let wrapper_name = syn::Ident::from(format!("Wrapper{}", name.as_ref()));
-    let bot_function_name = syn::Lit::Str(format!("{}", bot_function), syn::StrStyle::Cooked);
 
     let tokens = quote! {
         #[allow(dead_code)]
@@ -223,13 +222,14 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
     };
 
     if let Some(file_kind) = file_kind {
+        let file_kind_name = syn::Lit::Str(format!("{}", file_kind), syn::StrStyle::Cooked);
         quote! {
             #tokens
-            
+
             pub trait #trait_name {
                  fn #bot_function(&self, #( #field_compulsory: #ty_compulsory, )*) -> #wrapper_name;
             }
-            
+
             impl #trait_name for RcBot {
                 fn #bot_function(&self, #( #field_compulsory3: #ty_compulsory2, )*) -> #wrapper_name {
                     #wrapper_name { inner: #name { #( #field_compulsory2: #values, )* }, bot: self.inner.clone(), file: None }
@@ -239,7 +239,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                 pub fn send<'a>(self) -> impl Future<Item=(RcBot, objects::#answer), Error=Error> + 'a{
                     use futures::future::result;
                     use futures::IntoFuture;
-                   
+
                     let cloned_bot = self.bot.clone();
 
                     result::<#wrapper_name, Error>(Ok(self))
@@ -265,41 +265,41 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
 
                             file.ok_or(Error::from(ErrorKind::NoFile)).into_future()
                                 .and_then(move |file| {
-                                    bot.fetch_formdata(#function, &msg, file, #bot_function_name)
+                                    bot.fetch_formdata(#function, &msg, file, #file_kind_name)
                                 })
                                 .or_else(move |_| {
                                     bot2.fetch_json(#function, &msg_str)
                                 })
                         })
                         .and_then(move |answer| {
-                            let bot = RcBot { inner: cloned_bot }; 
+                            let bot = RcBot { inner: cloned_bot };
 
                             serde_json::from_str::<objects::#answer>(&answer)
                                 .map(|json| (bot, json))
                                 .map_err(|x| Error::from(x.context(ErrorKind::JsonParse)))
                         })
                 }
-               
+
                 #(
                     pub fn #field_optional<S>(mut self, val: S) -> Self where S: Into<#ty_optional> {
                         self.inner.#field_optional2 = Some(val.into());
-                
+
                         self
                     }
                 )*
-                
+
                 pub fn url<S>(mut self, val: S) -> Self where S: Into<String> {
                     self.inner.#file_kind = Some(val.into());
-                
+
                     self
                 }
-                
+
                 pub fn file_id<S>(mut self, val: S) -> Self where S: Into<String> {
                     self.inner.#file_kind = Some(val.into());
-                
+
                     self
                 }
-                
+
                 pub fn file<S>(mut self, val: S) -> Self where S: TryInto<file::File> {
                     match val.try_into() {
                         Ok(val) => {
@@ -319,11 +319,11 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
     } else {
         quote! {
             #tokens
-            
+
             pub trait #trait_name {
                  fn #bot_function(&self, #( #field_compulsory: #ty_compulsory, )*) -> #wrapper_name;
             }
-            
+
             impl #trait_name for RcBot {
                 fn #bot_function(&self, #( #field_compulsory3: #ty_compulsory2, )*) -> #wrapper_name {
                     #wrapper_name { inner: #name { #( #field_compulsory2: #values, )* }, bot: self.inner.clone(), file: None }
@@ -349,11 +349,11 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                             Box::new(obj)
                         })
                 }
-                
+
                 #(
                     pub fn #field_optional<S>(mut self, val: S) -> Self where S: Into<#ty_optional> {
                         self.inner.#field_optional2 = Some(val.into());
-        
+
                         self
                     }
                 )*
