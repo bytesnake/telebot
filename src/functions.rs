@@ -562,3 +562,17 @@ pub struct CreateNewStickerSet {
     #[serde(skip_serializing_if = "Option::is_none")]
     png_sticker: Option<String>,
 }
+
+///Use this method to add a new sticker to a set created by the bot. Returns True on success.
+#[derive(TelegramFunction, Serialize)]
+#[call = "addStickerToSet"]
+#[answer = "Boolean"]
+#[function = "add_sticker_to_set"]
+#[file_kind = "png_sticker"]
+pub struct AddStickerToSet {
+    user_id: Integer,
+    name: String,
+    emojis: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    png_sticker: Option<String>,
+}
