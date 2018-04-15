@@ -176,6 +176,7 @@ pub struct Sticker {
     pub height: Integer,
     pub thumb: Option<PhotoSize>,
     pub emoji: Option<String>,
+    pub set_name: Option<String>,
     pub file_size: Option<Integer>,
 }
 
