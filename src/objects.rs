@@ -13,6 +13,13 @@ pub type NotImplemented = ();
 use erased_serde::Serialize;
 use uuid::Uuid;
 
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+pub enum EditResponse {
+    Message(Message),
+    Boolean(Boolean),
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Link(pub String);
 

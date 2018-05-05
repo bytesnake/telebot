@@ -690,7 +690,7 @@ pub struct AnswerInlineQuery {
 /// is returned.
 #[derive(TelegramFunction, Serialize)]
 #[call = "editMessageText"]
-#[answer = "Boolean"]
+#[answer = "EditResponse"]
 #[function = "edit_message_text"]
 pub struct EditMessageText {
     text: String,
@@ -713,7 +713,7 @@ pub struct EditMessageText {
 /// True is returned.
 #[derive(TelegramFunction, Serialize)]
 #[call = "editMessageCaption"]
-#[answer = "Boolean"]
+#[answer = "EditResponse"]
 #[function = "edit_message_caption"]
 pub struct EditMessageCaption {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -735,7 +735,7 @@ pub struct EditMessageCaption {
 /// otherwise True is returned.
 #[derive(TelegramFunction, Serialize)]
 #[call = "editMessageReplyMarkup"]
-#[answer = "Boolean"]
+#[answer = "EditResponse"]
 #[function = "edit_message_reply_markup"]
 pub struct EditMessageReplyMarkup {
     #[serde(skip_serializing_if = "Option::is_none")]
