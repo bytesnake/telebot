@@ -28,7 +28,7 @@ fn main() {
                 Box::new(
                     InlineQueryResultArticle::new(
                         "Test".into(),
-                        Box::new(InputMessageContent::Text::new("This is a test".into())),
+                        Box::new(input_message_content::Text::new("This is a test".into())),
                     ).reply_markup(InlineKeyboardMarkup::new(vec![
                         vec![
                             InlineKeyboardButton::new("Wikipedia".into())

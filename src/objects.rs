@@ -13,6 +13,9 @@ pub type NotImplemented = ();
 use erased_serde::Serialize;
 use uuid::Uuid;
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Link(pub String);
+
 /// This object represents a Telegram user or bot.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct User {
@@ -762,7 +765,7 @@ pub struct InlineQueryResultCachedAudio {
     pub input_message_content: Option<Box<Serialize>>,
 }
 
-pub mod InputMessageContent {
+pub mod input_message_content {
     use super::Boolean;
 
     #[derive(setter, Serialize, Deserialize, Debug)]
