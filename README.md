@@ -1,4 +1,4 @@
-Telebot - Telegram Bot Library in Rust
+Telebot - Telegram Bot Library for Rust
 ======================================
 
 [![Travis Build Status](https://travis-ci.org/bytesnake/telebot.svg)](https://travis-ci.org/bytesnake/telebot)
@@ -6,7 +6,7 @@ Telebot - Telegram Bot Library in Rust
 [![Crates.io](https://img.shields.io/crates/v/telebot.svg)](https://crates.io/crates/telebot)
 [![doc.rs](https://docs.rs/telebot/badge.svg)](https://docs.rs/telebot)
 
-This library allows you to write a Telegram Bot in Rust. It's an almost complete wrapper for the Telegram Bot API and uses tokio-curl to send requests to the Telegram server. Each Telegram function call returns a future which carries the actual bot and the answer. 
+This library allows you to write a Telegram Bot in the Rust language. It's an almost complete wrapper for the Telegram Bot API and uses hyper to send requests to the Telegram server. Each Telegram function call returns a future which carries the actual bot and the answer. 
 
 ## Usage
 Add this to your `Cargo.toml`
@@ -14,9 +14,10 @@ Add this to your `Cargo.toml`
 [dependencies]
 telebot = "0.2.8"
 ```
+You need a __nightly__ version of the Rust compiler, because procedural macros are not yet supported in the stable channel.
 
 ## How it works
-This example shows the basic usage of the telebot library. It creates a new handler for a simple "/reply" command and replies the received text. The eventloop polls for new updates every 200ms and calls the respectivly handler.
+This example shows the basic usage of the telebot library. It creates a new handler for a simple "/reply" command and replies the received text. The tokio eventloop polls every 200ms for new updates and matches them with the registered events. If the command matches with "/reply" it will call the function and execute the returned future.
 
 ``` rust
 extern crate telebot;
