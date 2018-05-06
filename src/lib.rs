@@ -52,6 +52,7 @@
 
 #![feature(custom_attribute)]
 #![feature(try_from)]
+#![feature(conservative_impl_trait)]
 #![allow(unused_attributes)]
 
 #[macro_use]
