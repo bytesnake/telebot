@@ -118,6 +118,8 @@ impl Into<String> for Action {
 #[function = "get_me"]
 pub struct GetMe;
 
+/// Use this method to receive incoming updates using long polling (wiki). An Array of Update
+/// objects is returned.
 #[derive(TelegramFunction, Serialize)]
 #[call = "getUpdates"]
 #[answer = "Updates"]
@@ -365,6 +367,7 @@ pub struct SendAction {
     action: String,
 }
 
+/// Use this method to send a game. On success, the sent Message is returned.
 #[derive(TelegramFunction, Serialize)]
 #[call = "sendGame"]
 #[answer = "Message"]
@@ -377,6 +380,9 @@ pub struct SendGame {
     reply_markup: Option<objects::InlineKeyboardMarkup>,
 }
 
+/// Use this method to set the score of the specified user in a game. On success, if the message
+/// was sent by the bot, returns the edited Message, otherwise returns True. Returns an error, if
+/// the new score is not greater than the user's current score in the chat and force is False.
 #[derive(TelegramFunction, Serialize)]
 #[call = "setGameScore"]
 #[answer = "Message"]
@@ -391,6 +397,12 @@ pub struct SetGameScore {
     inline_message_id: Option<String>,
 }
 
+/// Use this method to get data for high score tables. Will return the score of the specified user
+/// and several of his neighbors in a game. On success, returns an Array of GameHighScore objects.
+///
+/// This method will currently return scores for the target user, plus two of his closest neighbors
+/// on each side. Will also return the top three users if the user and his neighbors are not among
+/// them. Please note that this behavior is subject to change.
 #[derive(TelegramFunction, Serialize)]
 #[call = "getGameHighScores"]
 #[answer = "GameHighScore"]
@@ -462,6 +474,132 @@ pub struct LeaveChat {
 pub struct UnbanChatMember {
     chat_id: Integer,
     user_id: Integer,
+}
+
+/// Use this method to restrict a user in a supergroup. The bot must be an administrator in the
+/// supergroup for this to work and must have the appropriate admin rights. Pass True for all
+/// boolean parameters to lift restrictions from a user. Returns True on success.
+#[derive(TelegramFunction, Serialize)]
+#[call = "restrictChatMember"]
+#[answer = "Boolean"]
+#[function = "restrict_chat_member"]
+pub struct RestrictChatMember {
+    chat_id: Integer,
+    user_id: Integer,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    until_date: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_send_messages: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_send_media_messages: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_send_other_messages: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_add_web_previews: Option<bool>,
+}
+
+/// Use this method to promote or demote a user in a supergroup or a channel. The bot must be an
+/// administrator in the chat for this to work and must have the appropriate admin rights. Pass
+/// False for all boolean parameters to demote a user. Returns True on success.
+#[derive(TelegramFunction, Serialize)]
+#[call = "promoteChatMember"]
+#[answer = "Boolean"]
+#[function = "promote_chat_member"]
+pub struct PromoteChatMember {
+    chat_id: Integer,
+    user_id: Integer,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_change_into: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_post_messages: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_edit_messages: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_delete_messages: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_invite_users: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_restrict_members: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_pin_messages: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    can_promote_members: Option<bool>,
+}
+
+/// Use this method to generate a new invite link for a chat; any previously generated link is
+/// revoked. The bot must be an administrator in the chat for this to work and must have the
+/// appropriate admin rights. Returns the new invite link as String on success.
+#[derive(TelegramFunction, Serialize)]
+#[call = "exportChatInviteLink"]
+#[answer = "Link"]
+#[function = "export_chat_invite_link"]
+pub struct ExportChatInviteLink {
+    chat_id: Integer,
+}
+
+/// Use this method to delete a chat photo. Photos can't be changed for private chats. The bot must
+/// be an administrator in the chat for this to work and must have the appropriate admin rights.
+/// Returns True on success.
+///
+/// Note: In regular groups (non-supergroups), this method will only work if the ‘All Members Are
+/// Admins’ setting is off in the target group.
+#[derive(TelegramFunction, Serialize)]
+#[call = "deleteChatPhoto"]
+#[answer = "Boolean"]
+#[function = "delete_chat_photo"]
+pub struct DeleteChatPhoto {
+    chat_id: Integer,
+}
+
+/// Use this method to change the title of a chat. Titles can't be changed for private chats. The
+/// bot must be an administrator in the chat for this to work and must have the appropriate admin
+/// rights. Returns True on success.
+///
+/// Note: In regular groups (non-supergroups), this method will only work if the ‘All Members Are
+/// Admins’ setting is off in the target group.
+#[derive(TelegramFunction, Serialize)]
+#[call = "setChatTitle"]
+#[answer = "Boolean"]
+#[function = "set_chat_title"]
+pub struct SetChatTitle {
+    chat_id: Integer,
+    title: String,
+}
+
+/// Use this method to change the description of a supergroup or a channel. The bot must be an
+/// administrator in the chat for this to work and must have the appropriate admin rights. Returns
+/// True on success.
+#[derive(TelegramFunction, Serialize)]
+#[call = "setChatDescription"]
+#[answer = "Boolean"]
+#[function = "set_chat_description"]
+pub struct SetChatDescription {
+    chat_id: Integer,
+    description: String,
+}
+
+/// Use this method to pin a message in a supergroup or a channel. The bot must be an administrator
+/// in the chat for this to work and must have the ‘can_pin_messages’ admin right in the supergroup
+/// or ‘can_edit_messages’ admin right in the channel. Returns True on success.
+#[derive(TelegramFunction, Serialize)]
+#[call = "pinChatMessage"]
+#[answer = "Boolean"]
+#[function = "pin_chat_message"]
+pub struct PinChatMessage {
+    chat_id: Integer,
+    message_id: Integer,
+    disable_notification: Option<bool>,
+}
+
+/// Use this method to unpin a message in a supergroup or a channel. The bot must be an
+/// administrator in the chat for this to work and must have the ‘can_pin_messages’ admin right in
+/// the supergroup or ‘can_edit_messages’ admin right in the channel. Returns True on success.
+#[derive(TelegramFunction, Serialize)]
+#[call = "unpinChatMessage"]
+#[answer = "Boolean"]
+#[function = "unpin_chat_message"]
+pub struct UnpinChatMessage {
+    chat_id: Integer,
 }
 
 /// Use this method to get up to date information about the chat (current name of the user for
@@ -545,6 +683,86 @@ pub struct AnswerInlineQuery {
     switch_pm_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     switch_pm_parameter: Option<String>,
+}
+
+/// Use this method to edit text and game messages sent by the bot or via the bot (for inline bots).
+/// On success, if edited message is sent by the bot, the edited Message is returned, otherwise True
+/// is returned.
+#[derive(TelegramFunction, Serialize)]
+#[call = "editMessageText"]
+#[answer = "EditResponse"]
+#[function = "edit_message_text"]
+pub struct EditMessageText {
+    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    chat_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    inline_message_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_web_page_preview: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reply_markup: Option<objects::InlineKeyboardMarkup>,
+}
+
+/// Use this method to edit captions of messages sent by the bot or via the bot (for inline bots).
+/// On success, if edited message is sent by the bot, the edited Message is returned, otherwise
+/// True is returned.
+#[derive(TelegramFunction, Serialize)]
+#[call = "editMessageCaption"]
+#[answer = "EditResponse"]
+#[function = "edit_message_caption"]
+pub struct EditMessageCaption {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    chat_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    inline_message_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    caption: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reply_markup: Option<objects::InlineKeyboardMarkup>,
+}
+
+/// Use this method to edit only the reply markup of messages sent by the bot or via the bot (for
+/// inline bots). On success, if edited message is sent by the bot, the edited Message is returned,
+/// otherwise True is returned.
+#[derive(TelegramFunction, Serialize)]
+#[call = "editMessageReplyMarkup"]
+#[answer = "EditResponse"]
+#[function = "edit_message_reply_markup"]
+pub struct EditMessageReplyMarkup {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    chat_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    inline_message_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reply_markup: Option<objects::InlineKeyboardMarkup>,
+}
+
+/// Use this method to delete a message, including service messages, with the following limitations:
+/// - A message can only be deleted if it was sent less than 48 hours ago.
+/// - Bots can delete outgoing messages in groups and supergroups.
+/// - Bots granted can_post_messages permissions can delete outgoing messages in channels.
+/// - If the bot is an administrator of a group, it can delete any message there.
+/// - If the bot has can_delete_messages permission in a supergroup or a channel, it can delete any
+///		message there.
+/// Returns True on success.
+#[derive(TelegramFunction, Serialize)]
+#[call = "deleteMessage"]
+#[answer = "Boolean"]
+#[function = "delete_message"]
+pub struct DeleteMessage {
+    chat_id: Integer,
+    message_id: Integer,
 }
 
 ///Use this method to create new sticker set owned by a user.
