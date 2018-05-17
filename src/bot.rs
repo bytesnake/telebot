@@ -314,8 +314,15 @@ impl RcBot {
                 if let Some(ref mut message) = val.message {
                     if let Some(text) = message.text.clone() {
                         let mut content = text.split_whitespace();
-                        if let Some(cmd) = content.next() {
-                            if cmd.starts_with("/") {
+                        if let Some(command) = content.next() {
+                            if command.starts_with("/") {
+                                let cmd = {
+                                    if command.ends_with(&*self.inner.name.borrow().as_ref().unwrap().as_str()) {
+                                        &command[..(command.len() - self.inner.name.borrow().as_ref().unwrap().len() - 1)]
+                                    } else {
+                                        &command[..]
+                                    }
+                                };
                                 if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(cmd)
                                 {
                                     sndr = Some(sender.clone());
