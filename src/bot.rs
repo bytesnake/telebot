@@ -2,6 +2,7 @@
 //! as an underlying field. You should always use RcBot.
 
 use objects;
+use functions::FunctionGetMe;
 use failure::{Error, Fail, ResultExt};
 use error::{ErrorKind, TelegramError};
 use file::File;
@@ -43,6 +44,7 @@ impl RcBot {
 /// The main bot structure
 pub struct Bot {
     pub key: String,
+    pub name: RefCell<Option<String>>,
     pub handle: Handle,
     pub last_id: Cell<u32>,
     pub update_interval: Cell<u64>,
@@ -58,6 +60,7 @@ impl Bot {
         Bot {
             handle: handle.clone(),
             key: key.into(),
+            name: RefCell::new(None),
             last_id: Cell::new(0),
             update_interval: Cell::new(1000),
             timeout: Cell::new(30),
@@ -340,6 +343,7 @@ impl RcBot {
 
     /// helper function to start the event loop
     pub fn run<'a>(&'a self, core: &mut Core) -> Result<(), Error> {
+        *self.inner.name.borrow_mut() = Some(core.run(self.get_me().send()).unwrap().1.username.unwrap());
         core.run(self.get_stream().for_each(|_| Ok(())).into_future())
             .context(ErrorKind::Tokio)
             .map_err(Error::from)
