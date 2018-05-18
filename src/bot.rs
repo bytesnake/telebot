@@ -314,15 +314,13 @@ impl RcBot {
                 if let Some(ref mut message) = val.message {
                     if let Some(text) = message.text.clone() {
                         let mut content = text.split_whitespace();
-                        if let Some(command) = content.next() {
-                            if command.starts_with("/") {
-                                let cmd = {
-                                    if command.ends_with(&*self.inner.name.borrow().as_ref().unwrap().as_str()) {
-                                        &command[..(command.len() - self.inner.name.borrow().as_ref().unwrap().len() - 1)]
-                                    } else {
-                                        &command[..]
+                        if let Some(mut cmd) = content.next() {
+                            if cmd.starts_with("/") {
+                                if let Some(name) = self.inner.name.borrow().as_ref() {
+                                    if cmd.ends_with(name.as_str()) {
+                                        cmd = cmd.rsplitn(2, '@').skip(1).next().unwrap();
                                     }
-                                };
+                                }
                                 if let Some(sender) = self.inner.handlers.borrow_mut().get_mut(cmd)
                                 {
                                     sndr = Some(sender.clone());
@@ -350,7 +348,17 @@ impl RcBot {
 
     /// helper function to start the event loop
     pub fn run<'a>(&'a self, core: &mut Core) -> Result<(), Error> {
-        *self.inner.name.borrow_mut() = Some(core.run(self.get_me().send()).unwrap().1.username.unwrap());
+        // create a local copy of the bot to circumvent lifetime issues
+        let bot = self.inner.clone();
+        // create a new task which resolves the bot name and then set it in the struct
+        let resolve_name = self.get_me().send()
+            .map(move |user| {
+                if let Some(name) = user.1.username {
+                    bot.name.replace(Some(format!("@{}", name)));
+                }
+            });
+        // spawn the task
+        self.inner.handle.spawn(resolve_name.map_err(|_| ()));
         core.run(self.get_stream().for_each(|_| Ok(())).into_future())
             .context(ErrorKind::Tokio)
             .map_err(Error::from)
