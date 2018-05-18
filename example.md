@@ -3,7 +3,7 @@ In addition to the readme I will show a more sophisticated example here. We want
 
 `/location 2.321 12.32`
 
-The full example can be found (here)[https://github.com/bytesnake/telebot/blob/master/examples/error_handling.rs).
+The full example can be found [here](https://github.com/bytesnake/telebot/blob/master/examples/error_handling.rs).
 
 ## What could go wrong
 Before we are creating the future chain, lets first think about the error enum. Either the user input is invalid (e.g. there are not two decimals after the command) or the Telegram server could have problems to process the coordinates. Therefore the enum looks like this:
