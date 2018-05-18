@@ -30,17 +30,11 @@ fn main() {
         .then(|result| {
             let (bot, mut msg) = result.expect("Strange telegram error!");
 
-            let mut pos = msg.text
-                .take()
-                .unwrap()
-                .split_whitespace()
-                .take(2)
-                .map(|x| x.parse::<f32>())
-                .collect::<Vec<Result<f32, _>>>();
-
-            if let Some(Ok(longitude)) = pos.pop() {
-                if let Some(Ok(altitude)) = pos.pop() {
-                    return Ok((bot, msg, longitude, altitude));
+            if let Some(pos) = msg.text.take() {
+                let mut elms = pos.split_whitespace().take(2).filter_map(|x| x.parse::<f32>().ok());
+                
+                if let (Some(a), Some(l)) = (elms.next(), elms.next()) {
+                    return Ok((bot, msg, a, l));
                 }
             }
 
