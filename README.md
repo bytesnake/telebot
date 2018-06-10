@@ -70,7 +70,7 @@ pub struct SendLocation {
     longitude: f32,
 #[serde(skip_serializing_if="Option::is_none")]
     disable_notification: Option<bool>,
-#[serde(skip_serializing_if="Option::is_none")]                                                                                                             
+#[serde(skip_serializing_if="Option::is_none")]
     reply_to_message_id: Option<u32>,
 #[serde(skip_serializing_if="Option::is_none")]
     reply_markup: Option<NotImplemented>
