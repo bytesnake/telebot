@@ -7,23 +7,14 @@ use failure::{Error, Fail, ResultExt};
 use error::{ErrorKind, TelegramError};
 use file::File;
 
-use std::str;
-use std::time::Duration;
-use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::{Cell, RefCell};
+use std::{str, time::Duration, collections::HashMap, rc::Rc, cell::{Cell, RefCell}};
 
 use tokio_core::reactor::{Core, Handle, Interval};
-use hyper::{Body, Client, Method, Request, Uri};
-use hyper::client::{Config, FutureResponse, HttpConnector};
-use hyper::header::ContentType;
+use hyper::{Body, Client, Request, Uri, header::CONTENT_TYPE, client::{HttpConnector, ResponseFuture}};
 use hyper_tls::HttpsConnector;
 use hyper_multipart::client::multipart;
-use serde_json;
-use serde_json::value::Value;
-use futures::{stream, Future, IntoFuture, Stream};
-use futures::sync::mpsc;
-use futures::sync::mpsc::UnboundedSender;
+use serde_json::{self, value::Value};
+use futures::{stream, Future, IntoFuture, Stream, sync::mpsc::{self, UnboundedSender}};
 
 /// A clonable, single threaded bot
 ///
@@ -96,13 +87,13 @@ impl Bot {
         let url: Result<Uri, _> =
             format!("https://api.telegram.org/bot{}/{}", self.key, func).parse();
 
-        let client = Client::configure()
-            .connector(HttpsConnector::new(2, &self.handle).context(ErrorKind::HttpsInitializeError)?)
-            .build(&self.handle);
+        let client = Client::builder()
+            .build(HttpsConnector::new(2).context(ErrorKind::HttpsInitializeError)?);
 
-        let mut req = Request::new(Method::Post, url.context(ErrorKind::Uri)?);
-        req.headers_mut().set(ContentType::json());
-        req.set_body(msg);
+        let req = Request::post(url.context(ErrorKind::Uri)?)
+            .header(CONTENT_TYPE, "application/json")
+            .body(msg.into())
+            .context(ErrorKind::Hyper)?;
 
         Ok((client, req))
     }
@@ -135,21 +126,19 @@ impl Bot {
         kind: &str,
     ) -> Result<
         (
-            Client<HttpsConnector<HttpConnector>, multipart::Body>,
-            Request<multipart::Body>,
+            Client<HttpsConnector<HttpConnector>, Body>,
+            Request<Body>,
         ),
         Error,
     > {
-        let client: Client<HttpsConnector<_>, multipart::Body> = Config::default()
-            .body::<multipart::Body>()
-            .connector(HttpsConnector::new(4, &self.handle).context(ErrorKind::HttpsInitializeError)?)
+        let client: Client<HttpsConnector<_>, Body> = Client::builder()
             .keep_alive(true)
-            .build(&self.handle);
+            .build(HttpsConnector::new(4).context(ErrorKind::HttpsInitializeError)?);
 
         let url: Result<Uri, _> =
             format!("https://api.telegram.org/bot{}/{}", self.key, func).parse();
 
-        let mut req = Request::new(Method::Post, url.context(ErrorKind::Uri)?);
+        let mut req_builder = Request::post(url.context(ErrorKind::Uri)?);
         let mut form = multipart::Form::default();
 
         let msg = msg.as_object().ok_or(ErrorKind::JsonNotMap)?;
@@ -161,7 +150,7 @@ impl Bot {
                 etc => format!("{}", etc),
             };
 
-            form.add_text(key.as_ref(), val.as_ref());
+            form.add_text(key, val.as_ref());
         }
 
         match file {
@@ -173,7 +162,7 @@ impl Bot {
             }
         }
 
-        form.set_body(&mut req);
+        let req = form.set_body(&mut req_builder).context(ErrorKind::Hyper)?;
 
         Ok((client, req))
     }
@@ -181,9 +170,9 @@ impl Bot {
 
 /// Calls the Telegram API for the function and awaits the result. The result is then converted
 /// to a String and returned in a Future.
-pub fn _fetch(fut_res: FutureResponse) -> impl Future<Item = String, Error = Error> {
+pub fn _fetch(fut_res: ResponseFuture) -> impl Future<Item = String, Error = Error> {
     fut_res
-        .and_then(move |res| res.body().concat2())
+        .and_then(move |res| res.into_body().concat2())
         .map_err(|e| Error::from(e.context(ErrorKind::Hyper)))
         .and_then(move |response_chunks| {
             let s = str::from_utf8(&response_chunks)?;

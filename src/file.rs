@@ -2,9 +2,7 @@
 //!
 //! The filename should be such that it represents the content type.
 
-use std::io::Read;
-use std::convert::TryFrom;
-use std::path::Path;
+use std::{io::Read, convert::TryFrom, path::Path};
 use failure::Error;
 use error::ErrorKind;
 

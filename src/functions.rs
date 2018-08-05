@@ -2,17 +2,17 @@
 //!
 //! telebot-derive implements setter, setter and send methods to each struct
 
-use bot::{Bot, RcBot};
+use std::{rc::Rc, convert::{From, TryInto}};
+
 use serde_json;
-use objects;
-use objects::Integer;
-use file;
 use failure::{Error, Fail};
-use error::ErrorKind;
 use futures::Future;
-use std::rc::Rc;
-use std::convert::{From, TryInto};
 use erased_serde::Serialize;
+
+use bot::{Bot, RcBot};
+use objects::{self, Integer};
+use file;
+use error::ErrorKind;
 
 /// The strongly typed version of the parse_mode field which indicates the type of text
 pub enum ParseMode {
