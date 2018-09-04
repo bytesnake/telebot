@@ -148,7 +148,7 @@ pub struct Message {
     #[serde(skip_serializing_if = "Option::is_none")]
     disable_web_page_preview: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    disable_notificaton: Option<bool>,
+    disable_notification: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
