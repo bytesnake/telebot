@@ -11,7 +11,7 @@ use erased_serde::Serialize;
 
 use bot::{Bot, RcBot};
 use objects::{self, Integer};
-use file;
+use file::{self, MediaFile};
 use error::ErrorKind;
 
 /// The strongly typed version of the parse_mode field which indicates the type of text
@@ -164,7 +164,7 @@ pub struct Message {
 pub struct SendPhoto {
     chat_id: Integer,
     #[serde(skip_serializing_if = "Option::is_none")]
-    photo: Option<String>,
+    photo: Option<MediaFile>,
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -188,7 +188,7 @@ pub struct SendPhoto {
 pub struct SendAudio {
     chat_id: Integer,
     #[serde(skip_serializing_if = "Option::is_none")]
-    audio: Option<String>,
+    audio: Option<MediaFile>,
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -216,7 +216,7 @@ pub struct SendAudio {
 pub struct SendDocument {
     chat_id: Integer,
     #[serde(skip_serializing_if = "Option::is_none")]
-    document: Option<String>,
+    document: Option<MediaFile>,
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -236,7 +236,7 @@ pub struct SendDocument {
 pub struct SendSticker {
     chat_id: Integer,
     #[serde(skip_serializing_if = "Option::is_none")]
-    sticker: Option<String>,
+    sticker: Option<MediaFile>,
     #[serde(skip_serializing_if = "Option::is_none")]
     disable_notification: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -256,7 +256,7 @@ pub struct SendSticker {
 pub struct SendVideo {
     chat_id: Integer,
     #[serde(skip_serializing_if = "Option::is_none")]
-    video: Option<String>,
+    video: Option<MediaFile>,
     #[serde(skip_serializing_if = "Option::is_none")]
     duration: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -286,7 +286,7 @@ pub struct SendVideo {
 pub struct SendVoice {
     chat_id: Integer,
     #[serde(skip_serializing_if = "Option::is_none")]
-    voice: Option<String>,
+    voice: Option<MediaFile>,
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -297,6 +297,20 @@ pub struct SendVoice {
     reply_to_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_markup: Option<ReplyMarkup>,
+}
+
+#[derive(TelegramFunction, Serialize)]
+#[call = "sendMediaGroup"]
+#[answer = "Messages"]
+#[function = "mediagroup"]
+#[file_kind = "media"]
+pub struct MediaGroup {
+    chat_id: Integer,
+    media: Option<MediaFile>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_notification: Option<bool>, 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reply_to_message_id: Option<Integer>
 }
 
 /// Use this method to send point on the map. On success, the sent Message is returned.
@@ -778,7 +792,7 @@ pub struct CreateNewStickerSet {
     title: String,
     emojis: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    png_sticker: Option<String>,
+    png_sticker: Option<MediaFile>,
 }
 
 ///Use this method to add a new sticker to a set created by the bot. Returns True on success.
@@ -792,7 +806,7 @@ pub struct AddStickerToSet {
     name: String,
     emojis: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    png_sticker: Option<String>,
+    png_sticker: Option<MediaFile>,
 }
 
 ///Use this method to add a new sticker to a set created by the bot. Returns True on success.

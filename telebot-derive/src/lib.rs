@@ -1,5 +1,4 @@
     #![feature(try_from)]
-    #![feature(proc_macro, proc_macro_lib)]
     #![recursion_limit="150"]
 
     extern crate log;
@@ -217,7 +216,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
         pub struct #wrapper_name {
             bot: Rc<Bot>,
             inner: #name,
-            file: Option<Result<file::File, Error>>
+            file: Result<file::FileList, Error>
         }
     };
 
@@ -232,7 +231,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
 
             impl #trait_name for RcBot {
                 fn #bot_function(&self, #( #field_compulsory3: #ty_compulsory2, )*) -> #wrapper_name {
-                    #wrapper_name { inner: #name { #( #field_compulsory2: #values, )* }, bot: self.inner.clone(), file: None }
+                    #wrapper_name { inner: #name { #( #field_compulsory2: #values, )* }, bot: self.inner.clone(), file: Ok(file::FileList(Vec::new())) }
                 }
             }
             impl #wrapper_name {
@@ -244,28 +243,30 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
 
                     result::<#wrapper_name, Error>(Ok(self))
                         .and_then(move |mut tmp| {
-                            match serde_json::to_value(&tmp.inner) {
-                                Ok(msg) => {
-                                    if let Some(file) = tmp.file.take() {
-                                        match file {
-                                            Ok(file) => Ok((tmp, msg, Some(file))),
-                                            Err(e) => Err(e)
-                                        }
-                                    } else {
-                                        return Ok((tmp, msg, None));
-                                    }
+                            let #wrapper_name { bot, mut inner, mut file } = tmp;
+
+                            match file {
+                                Ok(files) => {
+                                    inner.#file_kind = files.to_metadata();
+
+                                    match serde_json::to_value(&inner) {
+                                        Ok(msg) => {
+                                            Ok((bot, msg, files.into_files()))
+                                        },
+                                        Err(err) => Err(Error::from(err.context(ErrorKind::JsonSerialize)))
+                                     }
                                 },
-                                Err(err) => Err(Error::from(err.context(ErrorKind::JsonSerialize)))
+                                Err(err) => Err(err)
                             }
                         })
-                        .and_then(move |(tmp, msg, file)| {
-                            let bot = tmp.bot.clone();
-                            let bot2 = tmp.bot.clone();
+                        .and_then(move |(bot, msg, files)| {
+                            let bot = bot.clone();
+                            let bot2 = bot.clone();
                             let msg_str = serde_json::to_string(&msg).unwrap();
 
-                            file.ok_or(Error::from(ErrorKind::NoFile)).into_future()
-                                .and_then(move |file| {
-                                    bot.fetch_formdata(#function, &msg, file, #file_kind_name)
+                            files.ok_or(Error::from(ErrorKind::NoFile)).into_future()
+                                .and_then(move |files| {
+                                    bot.fetch_formdata(#function, &msg, files, #file_kind_name)
                                 })
                                 .or_else(move |_| {
                                     bot2.fetch_json(#function, &msg_str)
@@ -288,31 +289,29 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                     }
                 )*
 
-                pub fn url<S>(mut self, val: S) -> Self where S: Into<String> {
-                    self.inner.#file_kind = Some(val.into());
-
-                    self
-                }
-
-                pub fn file_id<S>(mut self, val: S) -> Self where S: Into<String> {
-                    self.inner.#file_kind = Some(val.into());
-
-                    self
-                }
-
                 pub fn file<S>(mut self, val: S) -> Self where S: TryInto<file::File> {
-                    match val.try_into() {
-                        Ok(val) => {
-                            self.file = Some(Ok(val));
+                    let val = val.try_into();
 
-                            self
+                    let new_val = match self.file {
+                        Ok(mut filelist) => {
+                            match val {
+                                Ok(val) => {
+                                    filelist.push(file::FileWithCaption::new_empty(val));
+                                    Ok(filelist)
+                                },
+                                Err(err) => {
+                                    Err(Error::from(ErrorKind::NoFile))
+                                }
+                            }
                         },
                         Err(_) => {
-                            self.file = Some(Err(Error::from(ErrorKind::NoFile)));
+                            Err(Error::from(ErrorKind::NoFile))
+                        }
+                    };
 
-                            self
-                        },
-                    }
+                    self.file = new_val;
+
+                    self
                 }
             }
         }
@@ -326,7 +325,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
 
             impl #trait_name for RcBot {
                 fn #bot_function(&self, #( #field_compulsory3: #ty_compulsory2, )*) -> #wrapper_name {
-                    #wrapper_name { inner: #name { #( #field_compulsory2: #values, )* }, bot: self.inner.clone(), file: None }
+                    #wrapper_name { inner: #name { #( #field_compulsory2: #values, )* }, bot: self.inner.clone(), file: Ok(file::FileList(Vec::new())) }
                 }
             }
             impl #wrapper_name {

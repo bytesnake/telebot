@@ -97,6 +97,9 @@ pub struct Message {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct Messages(Vec<Message>);
+
+#[derive(Deserialize, Debug)]
 pub struct Updates(pub Vec<Update>);
 
 #[derive(Deserialize, Debug)]

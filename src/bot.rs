@@ -104,12 +104,12 @@ impl Bot {
         &self,
         func: &'static str,
         msg: &Value,
-        file: File,
+        files: Vec<File>,
         kind: &str,
     ) -> impl Future<Item = String, Error = Error> {
         debug!("Send formdata: {}", msg.to_string());
 
-        let request = self.build_formdata(func, msg, file, kind);
+        let request = self.build_formdata(func, msg, files, kind);
 
         request
             .into_future()
@@ -122,8 +122,8 @@ impl Bot {
         &self,
         func: &'static str,
         msg: &Value,
-        file: File,
-        kind: &str,
+        files: Vec<File>,
+        _kind: &str,
     ) -> Result<
         (
             Client<HttpsConnector<HttpConnector>, Body>,
@@ -153,12 +153,15 @@ impl Bot {
             form.add_text(key, val.as_ref());
         }
 
-        match file {
-            File::Memory { name, source } => {
-                form.add_reader_file(kind, source, name);
-            }
-            File::Disk { path } => {
-                form.add_file(kind, path).context(ErrorKind::NoFile)?;
+        for file in files {
+            match file {
+                File::Memory { name, source } => {
+                    form.add_reader_file(name.clone(), source, name);
+                }
+                File::Disk { path } => {
+                    form.add_file(path.clone().file_name().unwrap().to_str().unwrap(), path).context(ErrorKind::NoFile)?;
+                },
+                _ => {}
             }
         }
 
