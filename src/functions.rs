@@ -168,6 +168,8 @@ pub struct SendPhoto {
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     disable_notification: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<bool>,
