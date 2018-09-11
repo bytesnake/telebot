@@ -12,7 +12,7 @@ This library allows you to write a Telegram Bot in the Rust language. It's an al
 Add this to your `Cargo.toml`
 ``` toml
 [dependencies]
-telebot = "0.2.9"
+telebot = "0.2.10"
 ```
 You need a __nightly__ version of the Rust compiler, because procedural macros are not yet supported in the stable channel.
 
