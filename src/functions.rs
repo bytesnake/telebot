@@ -15,6 +15,7 @@ use file::{self, MediaFile};
 use error::ErrorKind;
 
 /// The strongly typed version of the parse_mode field which indicates the type of text
+#[derive(Serialize)]
 pub enum ParseMode {
     Markdown,
     HTML,
@@ -140,11 +141,11 @@ pub struct GetUpdates {
 #[call = "sendMessage"]
 #[answer = "Message"]
 #[function = "message"]
-pub struct Message {
+pub struct SendMessage {
     chat_id: Integer,
     text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    parse_mode: Option<String>,
+    parse_mode: Option<ParseMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     disable_web_page_preview: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -168,7 +169,7 @@ pub struct SendPhoto {
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    parse_mode: Option<String>,
+    parse_mode: Option<ParseMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     disable_notification: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -194,7 +195,7 @@ pub struct SendAudio {
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    parse_mode: Option<String>,
+    parse_mode: Option<ParseMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     duration: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -224,7 +225,7 @@ pub struct SendDocument {
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    parse_mode: Option<String>,
+    parse_mode: Option<ParseMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     disable_notification: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -272,7 +273,7 @@ pub struct SendVideo {
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    parse_mode: Option<String>,
+    parse_mode: Option<ParseMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     disable_notification: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -298,7 +299,7 @@ pub struct SendVoice {
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    parse_mode: Option<String>,
+    parse_mode: Option<ParseMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     duration: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -737,7 +738,7 @@ pub struct EditMessageText {
     #[serde(skip_serializing_if = "Option::is_none")]
     inline_message_id: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    parse_mode: Option<String>,
+    parse_mode: Option<ParseMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     disable_web_page_preview: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -761,7 +762,7 @@ pub struct EditMessageCaption {
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    parse_mode: Option<String>,
+    parse_mode: Option<ParseMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_markup: Option<objects::InlineKeyboardMarkup>,
 }
