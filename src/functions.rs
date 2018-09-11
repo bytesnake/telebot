@@ -314,7 +314,7 @@ pub struct SendVoice {
 #[answer = "Messages"]
 #[function = "mediagroup"]
 #[file_kind = "media"]
-pub struct MediaGroup {
+pub struct SendMediaGroup {
     chat_id: Integer,
     media: Option<MediaFile>,
     #[serde(skip_serializing_if = "Option::is_none")]
