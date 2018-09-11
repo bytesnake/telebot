@@ -194,6 +194,8 @@ pub struct SendAudio {
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     duration: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
     performer: Option<String>,
@@ -221,6 +223,8 @@ pub struct SendDocument {
     document: Option<MediaFile>,
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     disable_notification: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -268,6 +272,8 @@ pub struct SendVideo {
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     disable_notification: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
@@ -291,6 +297,8 @@ pub struct SendVoice {
     voice: Option<MediaFile>,
     #[serde(skip_serializing_if = "Option::is_none")]
     caption: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parse_mode: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     duration: Option<Integer>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -391,8 +399,11 @@ pub struct SendAction {
 pub struct SendGame {
     chat_id: Integer,
     game_short_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     disable_notification: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reply_markup: Option<objects::InlineKeyboardMarkup>,
 }
 
@@ -406,10 +417,15 @@ pub struct SendGame {
 pub struct SetGameScore {
     user_id: Integer,
     score: Integer,
+    #[serde(skip_serializing_if = "Option::is_none")]
     force: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     disable_edit_message: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     chat_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     message_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     inline_message_id: Option<String>,
 }
 
@@ -425,8 +441,11 @@ pub struct SetGameScore {
 #[function = "get_game_high_scores"]
 pub struct GetGameHighScores {
     user_id: Integer,
+    #[serde(skip_serializing_if = "Option::is_none")]
     chat_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     message_id: Option<Integer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     inline_message_id: Option<String>,
 }
 
@@ -604,6 +623,7 @@ pub struct SetChatDescription {
 pub struct PinChatMessage {
     chat_id: Integer,
     message_id: Integer,
+    #[serde(skip_serializing_if = "Option::is_none")]
     disable_notification: Option<bool>,
 }
 
