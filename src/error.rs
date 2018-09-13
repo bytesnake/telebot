@@ -51,7 +51,7 @@ pub enum ErrorKind {
     UTF8Decode,
 
     // indicates a Telegram error (e.g. a property is missing)
-    #[fail(display = "Telegram server responsed with an error")]
+    #[fail(display = "Telegram server responded with an error")]
     Telegram,
 
     #[fail(display = "Failed to read file for upload")]
@@ -89,7 +89,7 @@ pub enum ErrorKind {
     #[fail(display = "Failed to create the interval timer")]
     IntervalTimer,
 
-    #[fail(display = "Tokio library caused error")]
+    #[fail(display = "Tokio library caused an error")]
     Tokio,
 
     #[fail(display = "Please specify a file")]
