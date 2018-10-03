@@ -338,8 +338,7 @@ impl RcBot {
             })
     }
 
-    /// helper function to start the event loop
-    pub fn run<'a>(&'a self, core: &mut Core) -> Result<(), Error> {
+    pub fn resolve_name(&self) {
         // create a local copy of the bot to circumvent lifetime issues
         let bot = self.inner.clone();
         // create a new task which resolves the bot name and then set it in the struct
@@ -351,6 +350,11 @@ impl RcBot {
             });
         // spawn the task
         self.inner.handle.spawn(resolve_name.map_err(|_| ()));
+    }
+
+    /// helper function to start the event loop
+    pub fn run<'a>(&'a self, core: &mut Core) -> Result<(), Error> {
+        self.resolve_name();
         core.run(self.get_stream().for_each(|_| Ok(())).into_future())
             .context(ErrorKind::Tokio)
             .map_err(Error::from)
