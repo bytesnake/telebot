@@ -156,6 +156,19 @@ pub struct SendMessage {
     reply_markup: Option<ReplyMarkup>,
 }
 
+/// Use this method to forward messages. On success, the sent Message is returned.
+#[derive(TelegramFunction, Serialize)]
+#[call = "forwardMessage"]
+#[answer = "Message"]
+#[function = "forward"]
+pub struct FowardMessage {
+    chat_id: Integer,
+    from_chat_id: Integer,
+    message_id: Integer,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_notification: Option<bool>,
+}
+
 /// Use this method to send photos. On success, the sent Message is returned.
 #[derive(TelegramFunction, Serialize)]
 #[call = "sendPhoto"]
