@@ -248,12 +248,19 @@ impl RcBot {
         receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
     }
 
+    // replace .inner.handle.spawn with .spawn
+    pub fn spawn<F>(&self, f: F)
+        where F: Future<Item=(), Error=()> + 'static,
+    {
+        self.inner.handle.spawn(f);
+    }
+
     /// Register a new commnd
     pub fn register<T>(&self, hnd: T)
     where
         T: Stream + 'static,
     {
-        self.inner.handle.spawn(
+        self.spawn(
             hnd.for_each(|_| Ok(()))
                 .into_future()
                 .map(|_| ())
@@ -349,7 +356,7 @@ impl RcBot {
                 }
             });
         // spawn the task
-        self.inner.handle.spawn(resolve_name.map_err(|_| ()));
+        self.spawn(resolve_name.map_err(|_| ()));
     }
 
     /// helper function to start the event loop
