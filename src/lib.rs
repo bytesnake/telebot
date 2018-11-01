@@ -50,8 +50,6 @@
 //! }
 //! ```
 
-#![feature(custom_attribute)]
-#![feature(try_from)]
 #![allow(unused_attributes)]
 
 #[macro_use]

@@ -2,7 +2,7 @@
 //!
 //! telebot-derive implements setter, setter and send methods to each struct
 
-use std::{rc::Rc, convert::{From, TryInto}};
+use std::{rc::Rc, convert::From};
 
 use serde_json;
 use failure::{Error, Fail};
