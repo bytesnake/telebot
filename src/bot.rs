@@ -7,10 +7,11 @@ use failure::{Error, Fail, ResultExt};
 use error::{ErrorKind, TelegramError};
 use file::File;
 
-use std::{str, time::Duration, collections::HashMap, rc::Rc, cell::{Cell, RefCell}};
+use std::{str, time::Duration, collections::HashMap, rc::Rc, cell::{Cell, RefCell}, net::SocketAddr};
 
 use tokio_core::reactor::{Core, Handle, Interval};
-use hyper::{Body, Client, Request, Uri, header::CONTENT_TYPE, client::{HttpConnector, ResponseFuture}};
+use hyper::{Body, Client, Server, Response, Request, Uri, header::CONTENT_TYPE,
+        client::{HttpConnector, ResponseFuture}, service::service_fn};
 use hyper_tls::HttpsConnector;
 use hyper_multipart::client::multipart;
 use serde_json::{self, value::Value};
@@ -39,6 +40,7 @@ pub struct Bot {
     pub handle: Handle,
     pub last_id: Cell<u32>,
     pub update_interval: Cell<u64>,
+    pub bind_address: Cell<SocketAddr>,
     pub timeout: Cell<u64>,
     pub handlers: RefCell<HashMap<String, UnboundedSender<(RcBot, objects::Message)>>>,
     pub unknown_handler: RefCell<Option<UnboundedSender<(RcBot, objects::Message)>>>,
@@ -54,6 +56,7 @@ impl Bot {
             name: RefCell::new(None),
             last_id: Cell::new(0),
             update_interval: Cell::new(1000),
+            bind_address: Cell::new(([127, 0, 0, 1], 3000).into()),
             timeout: Cell::new(30),
             handlers: RefCell::new(HashMap::new()),
             unknown_handler: RefCell::new(None),
@@ -206,10 +209,34 @@ pub fn _fetch(fut_res: ResponseFuture) -> impl Future<Item = String, Error = Err
         })
 }
 
+/// Converts a request to a future Update.
+fn request_to_update(req: Request<Body>) -> impl Future<Item = objects::Update, Error = Error> {
+    req.into_body().concat2()
+        .map_err(|e| Error::from(e.context(ErrorKind::Hyper)))
+        .and_then(|req| str::from_utf8(&req)
+            .map(|s| s.to_owned())
+            .map_err(|x| Error::from(x.context(ErrorKind::UTF8Decode))))
+        .and_then(|s| serde_json::from_str::<objects::Update>(&s)
+            .map_err(|x| Error::from(x.context(ErrorKind::JsonParse))))
+}
+
+fn default_push_handler(_: &objects::Update) -> (Result<Response<Body>, Error>, bool) {
+    (Response::builder().status(200).body(Body::empty())
+        .map_err(|x| Error::from(x.context(ErrorKind::Hyper))),
+        true)
+}
+
 impl RcBot {
     /// Sets the update interval to an integer in milliseconds
     pub fn update_interval(self, interval: u64) -> RcBot {
         self.inner.update_interval.set(interval);
+
+        self
+    }
+
+    /// Sets the address to bind to for the webhook mode
+    pub fn bind_address(self, addr: SocketAddr) -> RcBot {
+        self.inner.bind_address.set(addr);
 
         self
     }
@@ -261,44 +288,19 @@ impl RcBot {
         );
     }
 
-    /// The main update loop, the update function is called every update_interval milliseconds
-    /// When an update is available the last_id will be updated and the message is filtered
-    /// for commands
-    /// The message is forwarded to the returned stream if no command was found
-    pub fn get_stream<'a>(
-        &'a self,
-    ) -> impl Stream<Item = (RcBot, objects::Update), Error = Error> + 'a {
-        use functions::*;
-
-        let duration = Duration::from_millis(self.inner.update_interval.get());
-        Interval::new(duration, &self.inner.handle)
-            .into_future()
-            .into_stream()
-            .flatten()
-            .map_err(|x| Error::from(x.context(ErrorKind::IntervalTimer)))
-            .and_then(move |_| {
-                self.get_updates()
-                    .offset(self.inner.last_id.get())
-                    .timeout(self.inner.timeout.get() as i64)
-                    .send()
-            })
-            .map(|(_, x)| {
-                stream::iter_result(
-                    x.0
-                        .into_iter()
-                        .map(|x| Ok(x))
-                        .collect::<Vec<Result<objects::Update, Error>>>(),
-                )
-            })
-            .flatten()
+    /// Does internal handling of updates (e.g. dispatching to command handlers)
+    fn handle_update_stream<'a, T>(&'a self, stream: T)
+        -> impl Stream<Item = (RcBot, objects::Update), Error = Error> + 'a
+        where T: Stream<Item = (objects::Update, bool), Error = Error> + 'a {
+        stream
             .and_then(move |x| {
-                if self.inner.last_id.get() < x.update_id as u32 + 1 {
-                    self.inner.last_id.set(x.update_id as u32 + 1);
+                if self.inner.last_id.get() < x.0.update_id as u32 + 1 {
+                    self.inner.last_id.set(x.0.update_id as u32 + 1);
                 }
 
                 Ok(x)
             })
-            .filter_map(move |mut val| {
+            .filter_map(move |(mut val, forward)| {
                 debug!("Got an update from Telegram: {:?}", val);
 
                 let mut sndr: Option<UnboundedSender<(RcBot, objects::Message)>> = None;
@@ -331,11 +333,95 @@ impl RcBot {
                     sender
                         .unbounded_send((self.clone(), val.message.unwrap()))
                         .unwrap_or_else(|e| error!("Error: {}", e));
-                    return None;
+                    None
+                } else if forward {
+                    Some((self.clone(), val))
                 } else {
-                    return Some((self.clone(), val));
+                    None
                 }
             })
+    }
+
+    /// Similar to `get_push_stream`, but takes a function that takes an
+    /// update and returns a future that returns a response.
+    ///
+    /// It is possible to return a request directly in the response.
+    pub fn get_push_stream_ex<'a, F, G>(&'a self, f: &'static F)
+        -> impl Stream<Item = (RcBot, objects::Update), Error = Error> + 'a
+        where
+            F: Send + Sync + Fn(&objects::Update) -> (G, bool),
+            G: 'static + IntoFuture<Item = Response<Body>, Error = Error>,
+            <G as IntoFuture>::Future: Send {
+        let (send, recv) = mpsc::unbounded();
+        self.inner.handle.spawn(Server::bind(&self.inner.bind_address.get())
+            .serve(move || {
+                let send = send.clone();
+                service_fn(move |req: Request<Body>| {
+                    let send = send.clone();
+                    request_to_update(req)
+                        .and_then(move |u| {
+                            let (respfut, forward) = f(&u);
+                            send.unbounded_send((u, forward))
+                                .unwrap_or_else(|e|
+                                    error!("Error sending to stream: {}", e));
+                            respfut
+                        })
+                        .or_else(|e| {
+                            error!("Error: {}", e);
+                            Response::builder().status(500).body(Body::empty())
+                        })
+                })
+            })
+            .map_err(|x| debug!("error in hyper: {:?}", x))
+        );
+        self.handle_update_stream(recv.map_err(|_| unreachable!()))
+    }
+
+    /// Bind to `bind_address` and listen for webhook updates from Telegram.
+    /// Similar to `get_stream`, when an update arrives, it is filtered for last_id
+    /// and processed for commands, and forwarded to the returned stream if no
+    /// commands are found.
+    ///
+    /// This function always returns a blank response to Telegram, unless an error
+    /// occurs, in which case a 500 Internal Server Error occurs, in which case
+    /// Telegram may resend the update.
+    pub fn get_push_stream<'a>(&'a self)
+        -> impl Stream<Item = (RcBot, objects::Update), Error = Error> + 'a {
+        self.get_push_stream_ex(&default_push_handler)
+    }
+
+    /// The main update loop, the update function is called every update_interval milliseconds
+    /// When an update is available the last_id will be updated and the message is filtered
+    /// for commands
+    /// The message is forwarded to the returned stream if no command was found
+    pub fn get_stream<'a>(
+        &'a self,
+    ) -> impl Stream<Item = (RcBot, objects::Update), Error = Error> + 'a {
+        use functions::*;
+
+        let duration = Duration::from_millis(self.inner.update_interval.get());
+        self.handle_update_stream(Interval::new(duration, &self.inner.handle)
+            .into_future()
+            .into_stream()
+            .flatten()
+            .map_err(|x| Error::from(x.context(ErrorKind::IntervalTimer)))
+            .and_then(move |_| {
+                self.get_updates()
+                    .offset(self.inner.last_id.get())
+                    .timeout(self.inner.timeout.get() as i64)
+                    .send()
+            })
+            .map(|(_, x)| {
+                stream::iter_result(
+                    x.0
+                        .into_iter()
+                        .map(|x| Ok(x))
+                        .collect::<Vec<Result<objects::Update, Error>>>(),
+                )
+            })
+            .flatten()
+            .map(|x| (x, true))
+        )
     }
 
     pub fn resolve_name(&self) {
