@@ -2,7 +2,7 @@
 //!
 //! The filename should be such that it represents the content type.
 
-use std::{io::Read, convert::TryFrom, path::PathBuf};
+use std::{io::Read, path::PathBuf};
 use failure::Error;
 use error::ErrorKind;
 
@@ -86,6 +86,10 @@ impl File {
             File::Url(url) => url.clone()
         }
     }
+
+    pub fn try_from<T: TryIntoFile>(value: T) -> Result<Self, T::Error> {
+        value.try_into()
+    }
 }
 
 pub struct FileWithCaption {
@@ -111,14 +115,20 @@ impl FileWithCaption {
         }
     }
 }
+
+pub trait TryIntoFile: Sized {
+    type Error;
+    fn try_into(self) -> Result<File, Self::Error>;
+}
+
 /// Construct a Telegram file from a local path
-impl<'a> TryFrom<&'a str> for File {
+impl<'a> TryIntoFile for &'a str {
     type Error = Error;
 
-    fn try_from(path: &'a str) -> Result<Self, Self::Error> {
+    fn try_into(self) -> Result<File, Self::Error> {
         let mut file = PathBuf::new();
 
-        file.push(path);
+        file.push(self);
 
         if file.is_file() {
             Ok(File::Disk { path: file })
@@ -129,13 +139,14 @@ impl<'a> TryFrom<&'a str> for File {
 }
 
 /// Construct a Telegram file from an object which implements the Read trait
-impl<'a, S: Read + Send + 'static> TryFrom<(&'a str, S)> for File {
+impl<'a, S: Read + Send + 'static> TryIntoFile for (&'a str, S) {
     type Error = Error;
 
-    fn try_from((name, source): (&'a str, S)) -> Result<Self, Self::Error>
+    fn try_into(self) -> Result<File, Self::Error>
     where
         S: Read + Send,
     {
+        let (name, source) = self;
         Ok(File::Memory {
             name: name.into(),
             source: Box::new(source),

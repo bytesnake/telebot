@@ -1,4 +1,3 @@
-    #![feature(try_from)]
     #![recursion_limit="150"]
 
     extern crate log;
@@ -10,7 +9,7 @@
     use proc_macro::TokenStream;
     use std::collections::BTreeMap;
 
-    #[proc_macro_derive(setter)]
+    #[proc_macro_derive(setter, attributes(query))]
     pub fn derive_setter(input: TokenStream) -> TokenStream {
         let ast = syn::parse_macro_input(&input.to_string()).unwrap();
         let expanded = expand_setter(ast);
@@ -128,7 +127,7 @@
         }
     }
 
-    #[proc_macro_derive(TelegramFunction)]
+    #[proc_macro_derive(TelegramFunction, attributes(call, answer, function, file_kind))]
     pub fn derive_telegram_sendable(input: TokenStream) -> TokenStream {
         let ast = syn::parse_macro_input(&input.to_string()).unwrap();
         let expanded = expand_function(ast);
@@ -289,8 +288,8 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                     }
                 )*
 
-                pub fn file<S>(mut self, val: S) -> Self where S: TryInto<file::File> {
-                    let val = val.try_into();
+                pub fn file<S, E>(mut self, val: S) -> Self where S: file::TryIntoFile<Error = E> {
+                    let val: Result<file::File, E> = val.try_into();
 
                     let new_val = match self.file {
                         Ok(mut filelist) => {
