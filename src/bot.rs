@@ -68,7 +68,7 @@ impl Bot {
         func: &'static str,
         msg: &str,
     ) -> impl Future<Item = String, Error = Error> {
-        debug!("Send JSON: {}", msg);
+        debug!("Send JSON {}: {}", func, msg);
 
         let request = self.build_json(func, String::from(msg));
 
@@ -107,7 +107,7 @@ impl Bot {
         files: Vec<File>,
         kind: &str,
     ) -> impl Future<Item = String, Error = Error> {
-        debug!("Send formdata: {}", msg.to_string());
+        debug!("Send formdata {}: {}", func, msg.to_string());
 
         let request = self.build_formdata(func, msg, files, kind);
 
