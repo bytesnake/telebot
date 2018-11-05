@@ -332,7 +332,7 @@ pub struct SendMediaGroup {
     chat_id: Integer,
     media: Option<MediaFile>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    disable_notification: Option<bool>, 
+    disable_notification: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     reply_to_message_id: Option<Integer>
 }
