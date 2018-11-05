@@ -25,10 +25,10 @@ pub struct RcBot {
 }
 
 impl RcBot {
-    pub fn new(handle: Handle, key: &str) -> RcBot {
-        RcBot {
-            inner: Rc::new(Bot::new(handle, key)),
-        }
+    pub fn new(handle: Handle, key: &str) -> Result<RcBot, Error> {
+        Ok(RcBot {
+            inner: Rc::new(Bot::new(handle, key)?),
+        })
     }
 }
 
@@ -42,13 +42,14 @@ pub struct Bot {
     pub timeout: Cell<u64>,
     pub handlers: RefCell<HashMap<String, UnboundedSender<(RcBot, objects::Message)>>>,
     pub unknown_handler: RefCell<Option<UnboundedSender<(RcBot, objects::Message)>>>,
+    pub client: Client<HttpsConnector<HttpConnector>, Body>
 }
 
 impl Bot {
-    pub fn new(handle: Handle, key: &str) -> Bot {
+    pub fn new(handle: Handle, key: &str) -> Result<Bot, Error> {
         debug!("Create a new bot with the key {}", key);
 
-        Bot {
+        Ok(Bot {
             handle: handle.clone(),
             key: key.into(),
             name: RefCell::new(None),
@@ -57,7 +58,12 @@ impl Bot {
             timeout: Cell::new(30),
             handlers: RefCell::new(HashMap::new()),
             unknown_handler: RefCell::new(None),
-        }
+            client: Client::builder()
+                .keep_alive(true)
+                .keep_alive_timeout(None)
+                .build(HttpsConnector::new(4)
+                    .context(ErrorKind::HttpsInitializeError)?)
+        })
     }
 
     /// Creates a new request and adds a JSON message to it. The returned Future contains a the
@@ -87,15 +93,12 @@ impl Bot {
         let url: Result<Uri, _> =
             format!("https://api.telegram.org/bot{}/{}", self.key, func).parse();
 
-        let client = Client::builder()
-            .build(HttpsConnector::new(2).context(ErrorKind::HttpsInitializeError)?);
-
         let req = Request::post(url.context(ErrorKind::Uri)?)
             .header(CONTENT_TYPE, "application/json")
             .body(msg.into())
             .context(ErrorKind::Hyper)?;
 
-        Ok((client, req))
+        Ok((self.client.clone(), req))
     }
 
     /// Creates a new request with some byte content (e.g. a file). The method properties have to be
@@ -131,10 +134,6 @@ impl Bot {
         ),
         Error,
     > {
-        let client: Client<HttpsConnector<_>, Body> = Client::builder()
-            .keep_alive(true)
-            .build(HttpsConnector::new(4).context(ErrorKind::HttpsInitializeError)?);
-
         let url: Result<Uri, _> =
             format!("https://api.telegram.org/bot{}/{}", self.key, func).parse();
 
@@ -167,7 +166,7 @@ impl Bot {
 
         let req = form.set_body(&mut req_builder).context(ErrorKind::Hyper)?;
 
-        Ok((client, req))
+        Ok((self.client.clone(), req))
     }
 }
 

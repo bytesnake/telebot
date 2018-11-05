@@ -18,7 +18,7 @@ fn main() {
     let mut lp = Core::new().unwrap();
 
     // Create the bot
-    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
+    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).unwrap().update_interval(200);
 
     // Register a location command which will send a location to requests like /location 2.321 12.32
     enum LocationErr {
@@ -32,7 +32,7 @@ fn main() {
 
             if let Some(pos) = msg.text.take() {
                 let mut elms = pos.split_whitespace().take(2).filter_map(|x| x.parse::<f32>().ok());
-                
+
                 if let (Some(a), Some(l)) = (elms.next(), elms.next()) {
                     return Ok((bot, msg, a, l));
                 }

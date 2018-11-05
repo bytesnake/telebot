@@ -15,7 +15,7 @@ fn main() {
     let mut lp = Core::new().unwrap();
 
     // Create the bot
-    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
+    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).unwrap().update_interval(200);
 
     let handle = bot.new_cmd("/send_self")
         .and_then(|(bot, msg)| {

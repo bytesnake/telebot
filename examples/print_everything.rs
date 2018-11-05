@@ -13,7 +13,7 @@ fn main() {
     let mut lp = Core::new().unwrap();
 
     // Create the bot
-    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
+    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).unwrap().update_interval(200);
 
     let stream = bot.get_stream().and_then(|(_, msg)| {
         println!("Received: {:#?}", msg);
