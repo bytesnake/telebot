@@ -347,9 +347,16 @@ impl RcBot {
                 if let Some(name) = user.1.username {
                     bot.name.replace(Some(format!("@{}", name)));
                 }
+            })
+            .map_err(|e| {
+                eprintln!("Error: could not resolve the bot name!");
+
+                for (i, cause) in e.iter_causes().enumerate() {
+                    println!(" => {}: {}", i, cause);
+                }
             });
         // spawn the task
-        self.inner.handle.spawn(resolve_name.map_err(|_| ()));
+        self.inner.handle.spawn(resolve_name);
     }
 
     /// helper function to start the event loop
