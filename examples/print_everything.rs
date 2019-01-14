@@ -19,8 +19,17 @@ fn main() {
         println!("Received: {:#?}", msg);
 
         Ok(())
+    })
+    .map_err(|e| {
+        eprintln!("Got an error: ");
+        for (i, cause) in e.iter_causes().enumerate() {
+            eprintln!(" => {}: {}", i, cause);
+        }
     });
 
     // enter the main loop
-    lp.run(stream.for_each(|_| Ok(())).into_future()).unwrap();
+    let res = lp.run(stream.for_each(|_| Ok(())).into_future());
+    if let Err(_) = res {
+        eprintln!("Event loop shutdown with an error!");
+    }
 }
