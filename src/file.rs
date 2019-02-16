@@ -35,8 +35,7 @@ impl FileList {
         if self.0.len() == 0 {
             None
         } else if self.0.len() == 1 {
-            //Some(MediaFile::SingleFile(self.0.iter().map(|x| x.file.name()).next().unwrap()))
-            None
+            Some(MediaFile::SingleFile(self.0.iter().map(|x| x.file.name()).next().unwrap()))
         } else {
             let entities = self.0.iter().map(|x| {
                 FileEntity::Photo {
