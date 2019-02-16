@@ -120,6 +120,14 @@ pub trait TryIntoFile: Sized {
     fn try_into(self) -> Result<File, Self::Error>;
 }
 
+impl TryIntoFile for File {
+    type Error = ();
+    
+    fn try_into(self) -> Result<File, Self::Error> {
+        Ok(self)
+    }
+}
+
 /// Construct a Telegram file from a local path
 impl<'a> TryIntoFile for &'a str {
     type Error = Error;
