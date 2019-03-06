@@ -95,7 +95,7 @@
                     pub fn new(#( #field_compulsory3: #ty_compulsory2, )*) -> #name {
                         let id = Uuid::new_v4();
 
-                        #name { kind: #query_name.into(), id: id.hyphenated().to_string(), #( #field_compulsory2: #values, )* }
+                        #name { kind: #query_name.into(), id: id.to_hyphenated().to_string(), #( #field_compulsory2: #values, )* }
                     }
                     #(
                         pub fn #field_optional<S>(mut self, val: S) -> Self where S: Into<#ty_optional> {
