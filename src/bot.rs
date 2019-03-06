@@ -126,12 +126,12 @@ impl Bot {
         _kind: &str,
     ) -> Result<
         (
-            Client<HttpsConnector<HttpConnector>, Body>,
-            Request<Body>,
+            Client<HttpsConnector<HttpConnector>, multipart::Body>,
+            Request<multipart::Body>,
         ),
         Error,
     > {
-        let client: Client<HttpsConnector<_>, Body> = Client::builder()
+        let client: Client<HttpsConnector<_>, multipart::Body> = Client::builder()
             .keep_alive(true)
             .build(HttpsConnector::new(4).context(ErrorKind::HttpsInitializeError)?);
 
@@ -165,7 +165,7 @@ impl Bot {
             }
         }
 
-        let req = form.set_body(&mut req_builder).context(ErrorKind::Hyper)?;
+        let req = form.set_body::<multipart::Body>(&mut req_builder).context(ErrorKind::Hyper)?;
 
         Ok((client, req))
     }

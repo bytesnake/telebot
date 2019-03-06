@@ -23,7 +23,7 @@ tokio-core = "0.1.15"
 hyper = "0.12.0"
 hyper-tls = "0.3.0"
 native-tls = "0.2"
-hyper-multipart-rfc7578 = "0.2.0-alpha2"
+hyper-multipart-rfc7578 = "0.3"
 uuid = { version = "0.7", features = ["v4"] }
 telebot-derive = {version = "0.0.12", path = "./telebot-derive/"}
 log = "0.4"
