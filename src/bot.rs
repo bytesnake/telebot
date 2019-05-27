@@ -42,6 +42,7 @@ pub struct Bot {
     pub timeout: Cell<u64>,
     pub handlers: RefCell<HashMap<String, UnboundedSender<(RcBot, objects::Message)>>>,
     pub unknown_handler: RefCell<Option<UnboundedSender<(RcBot, objects::Message)>>>,
+    pub callback_handler: RefCell<Option<UnboundedSender<(RcBot, objects::CallbackQuery)>>>,
 }
 
 impl Bot {
@@ -57,6 +58,7 @@ impl Bot {
             timeout: Cell::new(30),
             handlers: RefCell::new(HashMap::new()),
             unknown_handler: RefCell::new(None),
+            callback_handler: RefCell::new(None),
         }
     }
 
@@ -248,7 +250,16 @@ impl RcBot {
         receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
     }
 
-    /// Register a new commnd
+    /// Returns a stream which will yield a received CallbackQuery
+    pub fn callback(&self) -> impl Stream<Item = (RcBot, objects::CallbackQuery), Error = Error> {
+        let (sender, receiver) = mpsc::unbounded();
+
+        *self.inner.callback_handler.borrow_mut() = Some(sender);
+
+        receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
+    }
+
+    /// Register a new command
     pub fn register<T>(&self, hnd: T)
     where
         T: Stream + 'static,
@@ -300,6 +311,15 @@ impl RcBot {
             })
             .filter_map(move |mut val| {
                 debug!("Got an update from Telegram: {:?}", val);
+
+                if let Some(_) = val.callback_query {
+                    if let Some(sender) = self.inner.callback_handler.borrow_mut().clone() {
+                        sender
+                            .unbounded_send((self.clone(), val.callback_query.unwrap()))
+                            .unwrap_or_else(|e| error!("Error: {}", e));
+                        return None;
+                    }
+                }
 
                 let mut sndr: Option<UnboundedSender<(RcBot, objects::Message)>> = None;
 
