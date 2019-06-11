@@ -72,7 +72,6 @@ extern crate serde_json;
 extern crate tokio_core;
 extern crate uuid;
 
-#[macro_use]
 extern crate failure;
 
 pub use bot::RcBot;

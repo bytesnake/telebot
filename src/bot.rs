@@ -152,7 +152,7 @@ impl Bot {
                 etc => format!("{}", etc),
             };
 
-            form.add_text(key, val.as_ref());
+            form.add_text(key, val);
         }
 
         for file in files {
