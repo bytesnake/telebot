@@ -25,6 +25,6 @@ hyper-tls = "0.3.0"
 native-tls = "0.2"
 hyper-multipart-rfc7578 = "0.3"
 uuid = { version = "0.7", features = ["v4"] }
-telebot-derive = {version = "0.0.12", path = "./telebot-derive/"}
+telebot-derive = {version = "0.0.13", path = "./telebot-derive/"}
 log = "0.4"
 failure = "0.1.1"
