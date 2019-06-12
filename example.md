@@ -17,7 +17,7 @@ enum LocationErr {
 ## Create a new command
 We want to create a new bot and register a new command `/location`. This is very simple:
 ``` rust
-let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap());
+let bot = Bot::new(&env::var("TELEGRAM_BOT_KEY").unwrap());
 let handle = bot.new_cmd("/location")
 ```
 Everything else in this doc will modify the stream returned by new_cmd.

@@ -12,7 +12,7 @@ This library allows you to write a Telegram Bot in the Rust language. It's an al
 Add this to your `Cargo.toml`
 ``` toml
 [dependencies]
-telebot = "0.2.10"
+telebot = "0.3.0"
 ```
 You need a __nightly__ version of the Rust compiler, because procedural macros are not yet supported in the stable channel.
 
@@ -20,23 +20,18 @@ You need a __nightly__ version of the Rust compiler, because procedural macros a
 This example shows the basic usage of the telebot library. It creates a new handler for a simple "/reply" command and replies the received text. The tokio eventloop polls every 200ms for new updates and matches them with the registered events. If the command matches with "/reply" it will call the function and execute the returned future.
 
 ``` rust
-extern crate telebot;
-extern crate tokio_core;
-extern crate futures;
-
-use telebot::bot;
-use tokio_core::reactor::Core;                       
+use telebot::Bot;
 use futures::stream::Stream;
-use futures::Future;
+use std::env;
 
 // import all available functions
 use telebot::functions::*;
 
 fn main() {
-    let mut lp = Core::new().unwrap();
-    let bot = bot::RcBot::new(lp.handle(), "<TELEGRAM-BOT-TOKEN>")
-        .update_interval(200);
+    // Create the bot
+    let mut bot = Bot::new(&env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
 
+    // Register a reply command which answers a message
     let handle = bot.new_cmd("/reply")
         .and_then(|(bot, msg)| {
             let mut text = msg.text.unwrap().clone();
@@ -45,11 +40,10 @@ fn main() {
             }
 
             bot.message(msg.chat.id, text).send()
-        });
+        })
+        .for_each(|_| Ok(()));
 
-    bot.register(handle);
-
-    bot.run(&mut lp).unwrap();
+    bot.run_with(handle);
 }
 ```
 
