@@ -395,7 +395,7 @@ pub struct InlineQueryResultArticle {
     pub kind: String,
     pub id: String,
     pub title: String,
-    pub input_message_content: Box<Serialize>,
+    pub input_message_content: Box<Serialize + Send>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -433,7 +433,7 @@ pub struct InlineQueryResultPhoto {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -455,7 +455,7 @@ pub struct InlineQueryResultGif {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -477,7 +477,7 @@ pub struct InlineQueryResultMpeg4Gif {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -503,7 +503,7 @@ pub struct InlineQueryResultVideo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -523,7 +523,7 @@ pub struct InlineQueryResultAudio {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -541,7 +541,7 @@ pub struct InlineQueryResultVoice {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -560,7 +560,7 @@ pub struct InlineQueryResultDocument {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumb_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -581,7 +581,7 @@ pub struct InlineQueryResultLocation {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumb_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -604,7 +604,7 @@ pub struct InlineQueryResultVenue {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumb_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -625,7 +625,7 @@ pub struct InlineQueryResultContact {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumb_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -661,7 +661,7 @@ pub struct InlineQueryResultCachedPhoto {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -678,7 +678,7 @@ pub struct InlineQueryResultCachedGif {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -695,7 +695,7 @@ pub struct InlineQueryResultCachedMpeg4Gif {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -708,7 +708,7 @@ pub struct InlineQueryResultCachedSticker {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -726,7 +726,7 @@ pub struct InlineQueryResultCachedDocument {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -744,7 +744,7 @@ pub struct InlineQueryResultCachedVideo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -760,7 +760,7 @@ pub struct InlineQueryResultCachedVoice {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 #[derive(setter, Serialize)]
@@ -775,7 +775,7 @@ pub struct InlineQueryResultCachedAudio {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_markup: Option<InlineKeyboardMarkup>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_message_content: Option<Box<Serialize>>,
+    pub input_message_content: Option<Box<Serialize + Send>>,
 }
 
 pub mod input_message_content {

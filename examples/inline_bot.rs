@@ -1,8 +1,6 @@
-use std::sync::Arc;
 use telebot::Bot;
 use futures::stream::Stream;
 use std::env;
-use futures::{IntoFuture, Future};
 
 use erased_serde::Serialize;
 
@@ -13,13 +11,9 @@ fn main() {
     // Create the bot
     let mut bot = Bot::new(&env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
 
-    /*let stream = bot.resolve_name()
-        .into_stream()
-        .map(move |name| bot.clone().get_stream(name)).flatten()*/
-
     let stream = bot.inline()
         .and_then(|(bot, query)| {
-            let result: Vec<Box<Serialize + Send>> = vec![
+            let result: Vec<Box<dyn Serialize + Send>> = vec![
                 Box::new(
                     InlineQueryResultArticle::new(
                         "Test".into(),

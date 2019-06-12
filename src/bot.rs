@@ -280,7 +280,6 @@ impl Bot {
                 stream::iter_result(
                     x.0
                         .into_iter()
-                        //.collect::<Vec<objects::Update>>()
                         .map(|x| Ok(x))
                         .collect::<Vec<Result<objects::Update, Error>>>(),
                 )
