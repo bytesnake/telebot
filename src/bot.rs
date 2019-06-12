@@ -316,10 +316,10 @@ impl Bot {
             let mut sndr: Option<UnboundedSender<(RequestHandle, objects::Message)>> = None;
     
             if let Some(ref mut message) = val.message {
-                if let Some(text) = message.text.clone() {
-                    let mut content = text.split_whitespace();
-                    if let Some(mut cmd) = content.next() {
-                        if cmd.starts_with("/") {
+                if let Some(true) = message.entities.as_ref().and_then(|x| x.get(0)).map(|x| x.kind == "bot_command") {
+                    if let Some(text) = message.text.clone() {
+                        let mut content = text.split_whitespace();
+                        if let Some(mut cmd) = content.next() {
                             if let Some(name) = self.name.as_ref() {
                                 if cmd.ends_with(name.as_str()) {
                                     cmd = cmd.rsplitn(2, '@').skip(1).next().unwrap();
