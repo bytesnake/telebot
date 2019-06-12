@@ -1,10 +1,4 @@
-extern crate failure;
-extern crate futures;
-extern crate telebot;
-extern crate tokio_core;
-
-use telebot::RcBot;
-use tokio_core::reactor::Core;
+use telebot::{Bot, File};
 use failure::Error;
 use futures::stream::Stream;
 use futures::Future;
@@ -14,11 +8,8 @@ use std::env;
 use telebot::functions::*;
 
 fn main() {
-    // Create a new tokio core
-    let mut lp = Core::new().unwrap();
-
     // Create the bot
-    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
+    let mut bot = Bot::new(&env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
 
     // Register a location command which will send a location to requests like /location 2.321 12.32
     enum LocationErr {
@@ -54,9 +45,8 @@ fn main() {
             };
 
             bot.message(msg.chat.id, text).send()
-        });
-
-    bot.register(handle);
+        })
+        .for_each(|_| Ok(()));
 
     // Register a get_my_photo command which will send the own profile photo to the chat
     enum PhotoErr {
@@ -86,7 +76,7 @@ fn main() {
         })
         .and_then(|(bot, msg, file_id)| {
             bot.photo(msg.chat.id)
-                .file_id(file_id)
+                .file(File::Telegram(file_id))
                 .send()
                 .map_err(|err| (bot, msg, PhotoErr::Telegram(err)))
         })
@@ -97,10 +87,9 @@ fn main() {
             };
 
             bot.message(msg.chat.id, text).send()
-        });
-
-    bot.register(handle2);
+        })
+        .for_each(|_| Ok(()));
 
     // enter the main loop
-    bot.run(&mut lp).unwrap();
+    bot.run_with(handle.join(handle2));
 }

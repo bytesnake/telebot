@@ -213,7 +213,7 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
     let tokens = quote! {
         #[allow(dead_code)]
         pub struct #wrapper_name {
-            bot: Rc<Bot>,
+            bot: RequestHandle,
             inner: #name,
             file: Result<file::FileList, Error>
         }
@@ -228,13 +228,13 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                  fn #bot_function(&self, #( #field_compulsory: #ty_compulsory, )*) -> #wrapper_name;
             }
 
-            impl #trait_name for RcBot {
+            impl #trait_name for RequestHandle {
                 fn #bot_function(&self, #( #field_compulsory3: #ty_compulsory2, )*) -> #wrapper_name {
-                    #wrapper_name { inner: #name { #( #field_compulsory2: #values, )* }, bot: self.inner.clone(), file: Ok(file::FileList(Vec::new())) }
+                    #wrapper_name { inner: #name { #( #field_compulsory2: #values, )* }, bot: self.clone(), file: Ok(file::FileList(Vec::new())) }
                 }
             }
             impl #wrapper_name {
-                pub fn send<'a>(self) -> impl Future<Item=(RcBot, objects::#answer), Error=Error> + 'a{
+                pub fn send<'a>(self) -> impl Future<Item=(RequestHandle, objects::#answer), Error=Error> + 'a{
                     use futures::future::result;
                     use futures::IntoFuture;
 
@@ -272,10 +272,8 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                                 })
                         })
                         .and_then(move |answer| {
-                            let bot = RcBot { inner: cloned_bot };
-
                             serde_json::from_str::<objects::#answer>(&answer)
-                                .map(|json| (bot, json))
+                                .map(|json| (cloned_bot, json))
                                 .map_err(|x| Error::from(x.context(ErrorKind::JsonParse)))
                         })
                 }
@@ -322,25 +320,21 @@ fn expand_function(ast: syn::MacroInput) -> quote::Tokens {
                  fn #bot_function(&self, #( #field_compulsory: #ty_compulsory, )*) -> #wrapper_name;
             }
 
-            impl #trait_name for RcBot {
+            impl #trait_name for RequestHandle {
                 fn #bot_function(&self, #( #field_compulsory3: #ty_compulsory2, )*) -> #wrapper_name {
-                    #wrapper_name { inner: #name { #( #field_compulsory2: #values, )* }, bot: self.inner.clone(), file: Ok(file::FileList(Vec::new())) }
+                    #wrapper_name { inner: #name { #( #field_compulsory2: #values, )* }, bot: self.clone(), file: Ok(file::FileList(Vec::new())) }
                 }
             }
             impl #wrapper_name {
-                pub fn send<'a>(self) -> impl Future<Item=(RcBot, objects::#answer), Error=Error> + 'a{
+                pub fn send<'a>(self) -> impl Future<Item=(RequestHandle, objects::#answer), Error=Error> + 'a{
                     use futures::future::result;
                     result(serde_json::to_string(&self.inner))
                         .map_err(|e| Error::from(e.context(ErrorKind::JsonSerialize)))
                         .and_then(move |msg| {
                             let obj = self.bot.fetch_json(#function, &msg)
                                 .and_then(move |x| {
-                                    let bot = RcBot {
-                                        inner: self.bot.clone(),
-                                    };
-
                                     serde_json::from_str::<objects::#answer>(&x)
-                                        .map(|json| (bot, json))
+                                        .map(|json| (self.bot.clone(), json))
                                         .map_err(|x| Error::from(x.context(ErrorKind::JsonParse)))
                                 });
 

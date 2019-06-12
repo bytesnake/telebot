@@ -50,6 +50,7 @@
 //! }
 //! ```
 
+#![allow(bare_trait_objects)]
 #![allow(unused_attributes)]
 
 #[macro_use]
@@ -58,24 +59,14 @@ extern crate telebot_derive;
 #[macro_use]
 extern crate log;
 
-#[macro_use]
-extern crate serde_derive;
-
-extern crate erased_serde;
-extern crate futures;
-extern crate hyper;
 extern crate hyper_multipart_rfc7578 as hyper_multipart;
-extern crate hyper_tls;
-extern crate native_tls;
+#[macro_use]
 extern crate serde;
-extern crate serde_json;
-extern crate tokio_core;
-extern crate uuid;
 
-extern crate failure;
+extern crate tokio;
 
-pub use bot::RcBot;
-//pub use error::Error;
+pub use bot::Bot;
+pub use error::Error;
 pub use file::File;
 
 pub mod bot;

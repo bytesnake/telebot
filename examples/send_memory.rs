@@ -1,9 +1,4 @@
-extern crate futures;
-extern crate telebot;
-extern crate tokio_core;
-
-use telebot::RcBot;
-use tokio_core::reactor::Core;
+use telebot::Bot;
 use futures::stream::Stream;
 use std::env;
 
@@ -11,11 +6,8 @@ use std::env;
 use telebot::functions::*;
 
 fn main() {
-    // Create a new tokio core
-    let mut lp = Core::new().unwrap();
-
     // Create the bot
-    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
+    let mut bot = Bot::new(&env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
 
     let text = r"
 Dearest creature in creation,
@@ -51,15 +43,15 @@ Scene, Melpomene, mankind.
 
 ...";
 
-    let handle = bot.new_cmd("/send").and_then(move |(bot, msg)| {
-        bot.document(msg.chat.id)
-            .file(("poem.txt", text.as_bytes()))
-            .caption("The Chaos")
-            .send()
-    });
-
-    bot.register(handle);
+    let handle = bot.new_cmd("/send")
+        .and_then(move |(bot, msg)| {
+            bot.document(msg.chat.id)
+                .file(("poem.txt", text.as_bytes()))
+                .caption("The Chaos")
+                .send()
+        })
+        .for_each(|_| Ok(()));
 
     // enter the main loop
-    bot.run(&mut lp).unwrap();
+    bot.run_with(handle);
 }

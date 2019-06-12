@@ -4,7 +4,7 @@
 
 use std::{io::Read, path::PathBuf};
 use failure::Error;
-use error::ErrorKind;
+use crate::error::ErrorKind;
 
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -67,7 +67,7 @@ impl FileList {
 pub enum File {
     Memory {
         name: String,
-        source: Box<Read + Send>,
+        source: Box<dyn Read + Send>,
     },
     Disk {
         path: PathBuf

@@ -1,13 +1,8 @@
-extern crate erased_serde;
-extern crate futures;
-extern crate telebot;
-extern crate tokio_core;
-
-use telebot::RcBot;
-use tokio_core::reactor::Core;
+use std::sync::Arc;
+use telebot::Bot;
 use futures::stream::Stream;
 use std::env;
-use futures::IntoFuture;
+use futures::{IntoFuture, Future};
 
 use erased_serde::Serialize;
 
@@ -15,16 +10,16 @@ use telebot::functions::*;
 use telebot::objects::*;
 
 fn main() {
-    // Create a new tokio core
-    let mut lp = Core::new().unwrap();
-
     // Create the bot
-    let bot = RcBot::new(lp.handle(), &env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
+    let mut bot = Bot::new(&env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
 
-    let stream = bot.get_stream()
-        .filter_map(|(bot, msg)| msg.inline_query.map(|query| (bot, query)))
+    /*let stream = bot.resolve_name()
+        .into_stream()
+        .map(move |name| bot.clone().get_stream(name)).flatten()*/
+
+    let stream = bot.inline()
         .and_then(|(bot, query)| {
-            let result: Vec<Box<Serialize>> = vec![
+            let result: Vec<Box<Serialize + Send>> = vec![
                 Box::new(
                     InlineQueryResultArticle::new(
                         "Test".into(),
@@ -41,8 +36,12 @@ fn main() {
             bot.answer_inline_query(query.id, result)
                 .is_personal(true)
                 .send()
-        });
+        })
+        .for_each(|_| Ok(()));
 
     // enter the main loop
-    lp.run(stream.for_each(|_| Ok(())).into_future()).unwrap();
+    bot.run_with(stream);
+    //tokio::spawn(stream.into_future().map_err(|_| ()));
+
+    //lp.run(stream.for_each(|_| Ok(())).into_future()).unwrap();
 }
