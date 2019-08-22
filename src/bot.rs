@@ -177,7 +177,7 @@ impl Bot {
     pub fn new(key: &str) -> Bot {
         let client = Client::builder()
                 .keep_alive(true)
-                .keep_alive_timeout(None)
+                .keep_alive_timeout(Some(Duration::from_secs(3600)))
                 .build(HttpsConnector::new(4).unwrap());
 
         Bot {
@@ -185,7 +185,7 @@ impl Bot {
             key: key.into(),
             name: None,
             update_interval: 2000,
-            timeout: 100,
+            timeout: 3600,
             handlers: HashMap::new(),
             unknown_handler: None,
             callback_handler: None,
@@ -203,6 +203,13 @@ impl Bot {
     /// Sets the timeout interval for long polling
     pub fn timeout(mut self, timeout: u64) -> Bot {
         self.timeout = timeout;
+
+        let client = Client::builder()
+                .keep_alive(true)
+                .keep_alive_timeout(Some(Duration::from_secs(timeout)))
+                .build(HttpsConnector::new(4).unwrap());
+
+        self.request = RequestHandle { inner: Arc::new(client), key: self.key.clone() };
 
         self
     }

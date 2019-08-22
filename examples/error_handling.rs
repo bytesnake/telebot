@@ -22,7 +22,9 @@ fn main() {
             let (bot, mut msg) = result.expect("Strange telegram error!");
 
             if let Some(pos) = msg.text.take() {
-                let mut elms = pos.split_whitespace().take(2).filter_map(|x| x.parse::<f32>().ok());
+                let mut elms = pos.split_whitespace().take(2).filter_map(
+                    |x| x.parse::<f32>().ok(),
+                );
 
                 if let (Some(a), Some(l)) = (elms.next(), elms.next()) {
                     return Ok((bot, msg, a, l));
@@ -32,9 +34,9 @@ fn main() {
             return Err((bot, msg, LocationErr::WrongLocationFormat));
         })
         .and_then(|(bot, msg, long, alt)| {
-            bot.location(msg.chat.id, long, alt)
-                .send()
-                .map_err(|err| (bot, msg, LocationErr::Telegram(err)))
+            bot.location(msg.chat.id, long, alt).send().map_err(|err| {
+                (bot, msg, LocationErr::Telegram(err))
+            })
         })
         .or_else(|(bot, msg, err)| {
             let text = {
