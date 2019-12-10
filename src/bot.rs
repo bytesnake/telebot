@@ -1,5 +1,4 @@
-//! This is the actual Bot module. For ergonomic reasons there is a RcBot which uses the real bot
-//! as an underlying field. You should always use RcBot.
+//! The bot module
 
 use crate::objects;
 //use functions::FunctionGetMe;
@@ -18,6 +17,8 @@ use futures::{stream, Future, future::IntoFuture, sync::mpsc::{self, UnboundedSe
 use failure::{Error, Fail, ResultExt};
 use hyper_multipart_rfc7578::client::multipart::Body;
 
+/// A clonable request handle struct
+/// Allows the construction of requests to the Telegram server
 #[derive(Clone)]
 pub struct RequestHandle {
     key: String,
@@ -33,8 +34,8 @@ impl RequestHandle {
         func: &'static str,
         msg: &str,
     ) -> impl Future<Item = String, Error = Error> {
-        debug!("Send JSON {}: {}", func, msg);
 
+        debug!("Send JSON {}: {}", func, msg);
         let request = self.build_json(func, String::from(msg)).unwrap();
 
         _fetch(self.inner.request(request))
@@ -50,8 +51,7 @@ impl RequestHandle {
         let url: Result<Uri, _> =
             format!("https://api.telegram.org/bot{}/{}", self.key, func).parse();
 
-        /*let client = Client::builder()
-            .build(HttpsConnector::new(2).context(ErrorKind::HttpsInitializeError)?);*/
+        debug!("Send message {}", msg);
 
         let req = Request::post(url.context(ErrorKind::Uri)?)
             .header(CONTENT_TYPE, "application/json")
@@ -73,7 +73,6 @@ impl RequestHandle {
         debug!("Send formdata {}: {}", func, msg.to_string());
 
         let request = self.build_formdata(func, msg, files, kind).unwrap();
-
         _fetch(self.inner.request(request))
     }
 
@@ -86,10 +85,6 @@ impl RequestHandle {
         files: Vec<File>,
         _kind: &str,
     ) -> Result<Request<Body2>,Error> {
-        /*let client: Client<HttpsConnector<_>, multipart::Body> = Client::builder()
-            .keep_alive(true)
-            .build(HttpsConnector::new(4).context(ErrorKind::HttpsInitializeError)?);*/
-
         let url: Result<Uri, _> =
             format!("https://api.telegram.org/bot{}/{}", self.key, func).parse();
 
@@ -127,10 +122,16 @@ impl RequestHandle {
 }
 /// Calls the Telegram API for the function and awaits the result. The result is then converted
 /// to a String and returned in a Future.
+//pub fn _fetch<T: futures_retry::ErrorHandler<std::io::Error>>(fut_res: FutureRetry<FnMut() -> ResponseFuture, T>) -> impl Future<Item = String, Error = Error> {
+//pub fn _fetch<T: Future<Item=hyper::Response<hyper::Body>, Error=hyper::error::Error>>(fut_res: T) -> impl Future<Item = String, Error = Error> {
 pub fn _fetch(fut_res: ResponseFuture) -> impl Future<Item = String, Error = Error> {
     fut_res
         .and_then(move |res| res.into_body().concat2())
-        .map_err(|e| Error::from(e.context(ErrorKind::Hyper)))
+        .map_err(|e| {
+            eprintln!("{:?}", e);
+
+            Error::from(e.context(ErrorKind::Hyper))
+        })
         .and_then(move |response_chunks| {
             let s = str::from_utf8(&response_chunks)?;
 
@@ -160,6 +161,10 @@ pub fn _fetch(fut_res: ResponseFuture) -> impl Future<Item = String, Error = Err
         })
 }
 
+/// The main bot structure
+///
+/// Contains all configuration like `key`, `name`, etc. important handles to message the user and
+/// `request` to issue requests to the Telegram server
 #[derive(Clone)]
 pub struct Bot {
     pub request: RequestHandle,
@@ -374,6 +379,9 @@ impl Bot {
             .map_err(|x| Error::from(x.context(ErrorKind::IntervalTimer)))
             .map(move |_| self.clone().process_updates(last_id.clone()))
             .flatten()
+            /*.inspect_err(|err| println!("Error on {:?}", err))
+            .then(|r| futures::future::ok(stream::iter_ok::<_, Error>(r)))
+            .flatten()*/
     }
 
     pub fn into_future(&self) -> impl Future<Item = (), Error = Error> {

@@ -63,11 +63,14 @@ impl FileList {
     }
 }
 
+//trait ReadAndClone: Clone + Read {}
+//impl<T> ReadAndClone for T where T: Clone + Read{}
+
 /// A Telegram file which contains a readable source and a filename
 pub enum File {
     Memory {
         name: String,
-        source: Box<dyn Read + Send>,
+        source: Box<Read + Send>,
     },
     Disk {
         path: PathBuf
@@ -151,7 +154,7 @@ impl<'a, S: Read + Send + 'static> TryIntoFile for (&'a str, S) {
 
     fn try_into(self) -> Result<File, Self::Error>
     where
-        S: Read + Send,
+        S: Read
     {
         let (name, source) = self;
         Ok(File::Memory {

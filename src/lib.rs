@@ -7,46 +7,30 @@
 //! # Example usage
 //!
 //! ```
-//! extern crate telebot;
-//! extern crate tokio_core;
-//! extern crate futures;
-
-//! use telebot::bot;
-//! use tokio_core::reactor::Core;
+//! use telebot::Bot;
 //! use futures::stream::Stream;
-//! use futures::Future;
-//! use std::fs::File;
-//!
+//! use std::env;
+//! 
 //! // import all available functions
 //! use telebot::functions::*;
-//!
+//! 
 //! fn main() {
-//!     // create a new event loop
-//!     let mut lp = Core::new().unwrap();
-//!
-//!     // init the bot with the bot key and an update interval of 200ms
-//!     let bot = bot::RcBot::new(lp.handle(), "<TELEGRAM-BOT-TOKEN>")
-//!         .update_interval(200);
-//!
-//!     // register a new command "reply" which replies all received messages
+//!     // Create the bot
+//!     let mut bot = Bot::new(&env::var("TELEGRAM_BOT_KEY").unwrap()).update_interval(200);
+//! 
+//!     // Register a reply command which answers a message
 //!     let handle = bot.new_cmd("/reply")
-//!     .and_then(|(bot, msg)| {
-//!         let mut text = msg.text.unwrap().clone();
-//!
-//!         // when the text is empty send a dummy text
-//!         if text.is_empty() {
-//!             text = "<empty>".into();
-//!         }
-//!
-//!         // construct a message and return a new future which will be resolved by tokio
-//!         bot.message(msg.chat.id, text).send()
-//!     });
-//!
-//!     // register the new command
-//!     bot.register(handle);
-//!
-//!     // start the event loop
-//!     bot.run(&mut lp).unwrap();
+//!         .and_then(|(bot, msg)| {
+//!             let mut text = msg.text.unwrap().clone();
+//!             if text.is_empty() {
+//!                 text = "<empty>".into();
+//!             }
+//! 
+//!             bot.message(msg.chat.id, text).send()
+//!         })
+//!         .for_each(|_| Ok(()));
+//! 
+//!     bot.run_with(handle);
 //! }
 //! ```
 

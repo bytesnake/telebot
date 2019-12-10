@@ -1,6 +1,6 @@
 [package]
 name = "telebot-derive"
-version = "0.0.13"
+version = "0.0.14"
 authors = ["bytesnake [bytesnake@mailbox.org"]
 
 description = "Getters and setters for the telebot library"
