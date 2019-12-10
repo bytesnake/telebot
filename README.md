@@ -14,8 +14,6 @@ Add this to your `Cargo.toml`
 [dependencies]
 telebot = "0.3.1"
 ```
-You need a __nightly__ version of the Rust compiler, because procedural macros are not yet supported in the stable channel.
-
 ## How it works
 This example shows the basic usage of the telebot library. It creates a new handler for a simple "/reply" command and replies the received text. The tokio eventloop polls every 200ms for new updates and matches them with the registered events. If the command matches with "/reply" it will call the function and execute the returned future.
 
