@@ -161,7 +161,7 @@ pub struct SendMessage {
 #[call = "forwardMessage"]
 #[answer = "Message"]
 #[function = "forward"]
-pub struct FowardMessage {
+pub struct ForwardMessage {
     chat_id: Integer,
     from_chat_id: Integer,
     message_id: Integer,
