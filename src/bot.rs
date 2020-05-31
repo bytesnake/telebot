@@ -173,7 +173,8 @@ pub struct Bot {
     update_interval: u64,
     timeout: u64,
     pub handlers: HashMap<String, UnboundedSender<(RequestHandle, objects::Message)>>,
-    pub unknown_handler: Option<UnboundedSender<(RequestHandle, objects::Message)>>,
+    pub unknown_cmd_handler: Option<UnboundedSender<(RequestHandle, objects::Message)>>,
+    pub unknown_text_handler: Option<UnboundedSender<(RequestHandle, objects::Message)>>,
     pub callback_handler: Option<UnboundedSender<(RequestHandle, objects::CallbackQuery)>>,
     pub inline_handler: Option<UnboundedSender<(RequestHandle, objects::InlineQuery)>>
 }
@@ -192,7 +193,8 @@ impl Bot {
             update_interval: 2000,
             timeout: 3600,
             handlers: HashMap::new(),
-            unknown_handler: None,
+            unknown_cmd_handler: None,
+            unknown_text_handler: None,
             callback_handler: None,
             inline_handler: None
         }
@@ -237,11 +239,32 @@ impl Bot {
         receiver.map_err(|_| Error::from(ErrorKind::Channel))
     }
 
+    /// Creates a new text based command and returns a stream which will yield a message when the text is sent
+    pub fn new_text(
+        &mut self,
+        cmd: &str,
+    ) -> impl Stream<Item = (RequestHandle, objects::Message), Error = Error> {
+        let (sender, receiver) = mpsc::unbounded();
+
+        self.handlers.insert(cmd.into(), sender);
+
+        receiver.map_err(|_| Error::from(ErrorKind::Channel))
+    }
+
+    /// Returns a stream which will yield a message when none of previously registered text based command matches
+    pub fn unknown_text(&mut self) -> impl Stream<Item = (RequestHandle, objects::Message), Error = Error> {
+        let (sender, receiver) = mpsc::unbounded();
+
+        self.unknown_text_handler = Some(sender);
+
+        receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
+    }
+
     /// Returns a stream which will yield a message when none of previously registered commands matches
     pub fn unknown_cmd(&mut self) -> impl Stream<Item = (RequestHandle, objects::Message), Error = Error> {
         let (sender, receiver) = mpsc::unbounded();
 
-        self.unknown_handler = Some(sender);
+        self.unknown_cmd_handler = Some(sender);
 
         receiver.then(|x| x.map_err(|_| Error::from(ErrorKind::Channel)))
     }
@@ -342,11 +365,30 @@ impl Bot {
                                 sndr = Some(sender.clone());
                                 message.text = Some(content.collect::<Vec<&str>>().join(" "));
                             } else if let Some(ref sender) =
-                                self.unknown_handler
+                                self.unknown_cmd_handler
                             {
                                 sndr = Some(sender.clone());
                             }
                         }
+                    }
+                } else if let Some(text) = message.text.clone() {
+                    let mut content = text.split_whitespace();
+                    if let Some(cmd) = content.next() {
+                        if let Some(sender) = self.handlers.get(cmd)
+                        {
+                            sndr = Some(sender.clone());
+                            message.text = Some(content.collect::<Vec<&str>>().join(" "));
+                        }
+                        else if let Some(ref sender) = self.unknown_text_handler
+                        {
+                            sndr = Some(sender.clone());
+                            message.text = Some(content.collect::<Vec<&str>>().join(" "));
+                        }
+                    }
+                    else if let Some(ref sender) = self.unknown_text_handler
+                    {
+                        sndr = Some(sender.clone());
+                        message.text = Some(content.collect::<Vec<&str>>().join(" "));
                     }
                 }
             }
